@@ -3,13 +3,14 @@ package nbcamp.food_order_platform.user.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import nbcamp.food_order_platform.global.common.entity.BaseEntity;
-import org.hibernate.annotations.Where;
+import nbcamp.food_order_platform.global.common.entity.BaseEntity;import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity(name = "p_user")
 @Getter
 @NoArgsConstructor
-@Where(clause = "deleted_at IS NULL")
+@SQLDelete(sql = "UPDATE p_user SET deleted_at = now() WHERE user_id = ?")
+@SQLRestriction("deleted_at IS NULL")
 public class UserEntity extends BaseEntity {
 
     @Id
