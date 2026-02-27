@@ -3,13 +3,14 @@ package nbcamp.food_order_platform.user.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import nbcamp.food_order_platform.global.common.entity.BaseEntity;
 import org.hibernate.annotations.Where;
 
 @Entity(name = "p_user")
 @Getter
 @NoArgsConstructor
-//@Where(clause = "deleted_at IS NULL")
-public class UserEntity {
+@Where(clause = "deleted_at IS NULL")
+public class UserEntity extends BaseEntity {
 
     @Id
     @Column(name = "user_id")
