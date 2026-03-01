@@ -9,7 +9,7 @@ import java.util.UUID;
 @Entity(name = "p_address")
 @Getter
 @NoArgsConstructor
-public class AddressEntity {
+public class Address {
 
     @Id
     @GeneratedValue
@@ -17,7 +17,7 @@ public class AddressEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private UserEntity user;
+    private User user;
 
     @Column(name = "place_name")
     private String placeName;

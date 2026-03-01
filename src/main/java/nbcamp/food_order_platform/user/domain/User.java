@@ -12,7 +12,7 @@ import org.hibernate.annotations.SQLRestriction;
 @NoArgsConstructor
 @SQLDelete(sql = "UPDATE p_user SET deleted_at = now() WHERE user_id = ?")
 @SQLRestriction("deleted_at IS NULL")
-public class UserEntity extends BaseEntity {
+public class User extends BaseEntity {
 
     @Id
     @Column(name = "user_id")
