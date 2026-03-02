@@ -62,5 +62,14 @@ public class Review extends BaseEntity {
     @Builder.Default
     private ReviewStatus status = ReviewStatus.VISIBLE;
 
+    public void updateReview(int rating, String content) {
+        this.rating = rating;
+        this.content = content;
+    }
+
+    public void updateStatus(ReviewStatus status) {
+        this.status = status;
+    }
+
 
 }
