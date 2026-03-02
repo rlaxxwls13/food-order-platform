@@ -3,6 +3,7 @@ package nbcamp.food_order_platform.review.application.service;
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.review.application.dto.CreateReviewDto;
 import nbcamp.food_order_platform.review.domain.entity.Review;
+import nbcamp.food_order_platform.review.domain.entity.ReviewStatus;
 import nbcamp.food_order_platform.review.domain.repository.ReviewRepository;
 import nbcamp.food_order_platform.review.presentation.dto.*;
 import nbcamp.food_order_platform.user.domain.Role;
@@ -10,7 +11,9 @@ import nbcamp.food_order_platform.user.domain.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +23,8 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     // TODO: 내일 머지 후 주석 해제
     // private final OrderRepository orderRepository;
+    // TODO: 내일 Store 객체 머지 후 주석 해제, 리뷰 갯수와 총 별점 갯수 갱신 로직 추가 예정.
+    // private final StoreRepository storeRepository;
 
     // 리뷰 작성
     public PostReviewResDto createReview(CreateReviewDto dto) {
@@ -71,8 +76,7 @@ public class ReviewService {
 
         Role userRole = user.getRole();
 
-        // 권한 체크 로직 (필요에 따라 추가)
-        // 1. 권한 체크: 매니저도 아니고 마스터도 아니라면 에러!
+        // 권한 체크: 매니저도 아니고 마스터도 아니라면 에러
         if (user.getRole() != Role.MANAGER && user.getRole() != Role.MASTER) {
             throw new IllegalArgumentException("매니저 또는 마스터 권한이 필요합니다.");
         }
@@ -100,7 +104,7 @@ public class ReviewService {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 리뷰입니다."));
 
-        // review.getUser().getUserId() 와 매개 변수 currentUserId 비교
+        // review.getUser().getUserId() 와 매개 변수 currentUserId 비교해 본인 체크.
         if (!review.getUser().getUserId().equals(currentUserId)) {
             throw new IllegalArgumentException("본인의 리뷰만 삭제할 수 있습니다.");
         }
@@ -108,9 +112,71 @@ public class ReviewService {
         reviewRepository.delete(review);
     }
 
-    // 리뷰 조회
-    public void getReviews() {}
+    // 리뷰 조회 - 가게 리뷰(CUSTOMER)
+    @Transactional(readOnly = true)
+    public List<GetReviewCustomerResDto> getReviewsByStoreForCustomer(UUID storeId) {
+        // 해당 가게의 리뷰 중 VISIBLE 상태인 것만 가져와 Customer DTO로 반환
+        return reviewRepository.findAllByStoreId(storeId).stream()
+                .filter(r -> r.getStatus() == ReviewStatus.VISIBLE)
+                .map(this::convertToCustomerDto)
+                .collect(Collectors.toList());
+    }
 
+    // 리뷰 조회 - 가게 리뷰 (관리자용)
+    @Transactional(readOnly = true)
+    public List<GetReviewManagerResDto> getReviewsByStoreForManager(UUID storeId, User currentUser) {
+        // 권한 체크
+        if (currentUser.getRole() != Role.MANAGER && currentUser.getRole() != Role.MASTER) {
+            throw new IllegalArgumentException("관리자 권한이 필요합니다.");
+        }
+
+        // 해당 가게의 모든 리뷰를 가져와서 Manager DTO로 반환 (상태값 포함)
+        return reviewRepository.findAllByStoreId(storeId).stream()
+                .map(this::convertToManagerDto)
+                .collect(Collectors.toList());
+    }
+
+    // 리뷰 조회 - 특정 유저가 작성한 리뷰 목록 조회
+    @Transactional(readOnly = true)
+    public List<GetReviewCustomerResDto> getReviewsByUser(Long targetUserId) {
+
+        // 해당 유저가 쓴 모든 리뷰 가져오기
+        List<Review> reviews = reviewRepository.findAllByUser_UserId(targetUserId);
+
+        // 다른 유저가 볼 수있는 것이라 VISIBLE 상태인 리뷰만 필터링해서 반환
+        return reviews.stream()
+                .filter(review -> review.getStatus() == ReviewStatus.VISIBLE)
+                .map(review -> GetReviewCustomerResDto.builder()
+                        .reviewId(review.getReviewId())
+                        .nickname(review.getNickname())
+                        .rating(review.getRating())
+                        .content(review.getContent())
+                        .createdAt(review.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    // 반환 메서드 (CUSTOMER)
+    private GetReviewCustomerResDto convertToCustomerDto(Review review) {
+        return GetReviewCustomerResDto.builder()
+                .reviewId(review.getReviewId())
+                .nickname(review.getNickname())
+                .rating(review.getRating())
+                .content(review.getContent())
+                .createdAt(review.getCreatedAt())
+                .build();
+    }
+    // 반환 메서드 (MASTER,MANAGER)
+    private GetReviewManagerResDto convertToManagerDto(Review review) {
+        return GetReviewManagerResDto.builder()
+                .reviewId(review.getReviewId())
+                .nickname(review.getNickname())
+                .rating(review.getRating())
+                .content(review.getContent())
+                .createdAt(review.getCreatedAt())
+                .status(review.getStatus())
+                .build();
+    }
 
 //  리뷰 작성시 검증 로직 메서드
 //  private void validateOrder(UUID orderId, Long userId) {
