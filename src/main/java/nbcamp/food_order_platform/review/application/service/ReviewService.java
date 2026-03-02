@@ -96,7 +96,17 @@ public class ReviewService {
     }
 
     // 리뷰 삭제
-    public void deleteReview() {}
+    public void deleteReview(UUID reviewId, Long currentUserId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 리뷰입니다."));
+
+        // review.getUser().getUserId() 와 매개 변수 currentUserId 비교
+        if (!review.getUser().getUserId().equals(currentUserId)) {
+            throw new IllegalArgumentException("본인의 리뷰만 삭제할 수 있습니다.");
+        }
+
+        reviewRepository.delete(review);
+    }
 
     // 리뷰 조회
     public void getReviews() {}
