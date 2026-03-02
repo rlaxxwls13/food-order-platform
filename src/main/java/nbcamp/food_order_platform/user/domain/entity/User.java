@@ -1,4 +1,4 @@
-package nbcamp.food_order_platform.user.domain;
+package nbcamp.food_order_platform.user.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
