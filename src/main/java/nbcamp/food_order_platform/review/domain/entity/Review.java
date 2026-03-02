@@ -2,18 +2,24 @@ package nbcamp.food_order_platform.review.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import nbcamp.food_order_platform.global.common.BaseEntity;
+import nbcamp.food_order_platform.user.domain.User;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 
 import java.util.UUID;
 
 @Entity
 @Table(name="p_review")
+@SQLDelete(sql = "UPDATE p_review SET deleted_at = NOW() WHERE review_id = ?")
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Review { // 추후 BaseEntity 상속
+public class Review extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -37,12 +43,10 @@ public class Review { // 추후 BaseEntity 상속
     @JdbcTypeCode(SqlTypes.UUID)
     private UUID storeId;
 
-//    추후 머지 되면 교체
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "user_id", nullable = false)
-//    private User user;
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    // 교체 완료
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(name = "nickname", nullable = false, length = 100)
     private String nickname;
