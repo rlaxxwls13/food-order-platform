@@ -17,13 +17,11 @@ import java.util.UUID;
 @SQLRestriction("deleted_at IS NULL")
 public class OrderItem {
 
-    //UUID
     @Id
     @GeneratedValue
     @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
-    //주문 ID
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private Order order;
@@ -37,7 +35,6 @@ public class OrderItem {
     @JdbcTypeCode(SqlTypes.UUID)
     private UUID productId;
 
-
     //가게 머지후 교체
     //가게 ID
 //    @ManyToOne(fetch = FetchType.LAZY)
@@ -47,27 +44,22 @@ public class OrderItem {
     @JdbcTypeCode(SqlTypes.UUID)
     private UUID storeId;
 
-    //가게 이름
     @Column(nullable = false)
     private String store_name;
 
-    //상품 이름
     @Column(nullable = false)
     private String product_name;
 
-    //상품 개수
     @Column(nullable = false)
     private Long quantity;
 
-    //상품 가격
     @Column(nullable = false)
     private Long price;
 
-    //주문 상태
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderItemStatus orderItemStatus;
 
-    //취소 수량
     @Column(nullable = true)
     private Long canceledQuantity = 0L;
 
@@ -76,4 +68,23 @@ public class OrderItem {
 
     private LocalDateTime deleted_at;
 
+    //부분 취소 처리
+    public void partialCanceled(Long count) {
+        if (this.quantity < count) {
+            throw new IllegalArgumentException("취소 요청 수량이 현재 수량보다 많습니다.");
+        }
+
+        this.quantity -= count;
+        this.canceledQuantity += count;
+
+        // 수량이 0이 되면 상태를 전체 취소로 변경
+        if (this.quantity == 0) {
+            this.orderItemStatus = OrderItemStatus.CANCELED;
+        }
+    }
+
+    //현재 수량에 따른 금액
+    public Long calculateCurrentAmount() {
+        return this.price * this.quantity;
+    }
 }

@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import nbcamp.food_order_platform.payment.domain.Payment;
-import org.hibernate.annotations.JdbcType;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
@@ -28,7 +27,6 @@ public class Order {
     @Column(columnDefinition = "BINARY(16)")
     private UUID id;
 
-    //유저 머지후 교체
     //유저 ID
 //    @ManyToOne(fetch = FetchType.LAZY)
 //    @JoinColumn(name = "user_id")
@@ -70,18 +68,37 @@ public class Order {
     @Column(nullable = false)
     private OrderStatus orderStatus;
 
-
-    // 추후 BaseEntity
     @CreatedDate
     @Column(nullable = false, updatable = false)
-    private LocalDateTime created_at;
+    private LocalDateTime created_at; // 오타 수정: crated_at -> created_at
 
-    //추후 BaseEntity
     @LastModifiedDate
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false)
     private LocalDateTime updated_at;
 
-    // soft delete 시간 기록용 필드
     private LocalDateTime deleted_at;
 
+    //특정 주문 상품 취소
+    public void cancelOrderItem(UUID orderItemId, Long cancelCount) {
+        OrderItem targetItem = this.orderItems.stream()
+                .filter(item -> item.getId().equals(orderItemId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 상품이 주문 내역에 없습니다."));
+
+        targetItem.partialCanceled(cancelCount);
+
+        this.total_amount = recalculateTotalAmount();
+
+        // 결제 정보 동기화 (payment 엔티티가 존재할 경우)
+        if (this.payment != null) {
+            this.payment.syncAmount(this.total_amount);
+        }
+    }
+
+    // 남은 상품들 기준 총액 계산
+    private Long recalculateTotalAmount() {
+        return this.orderItems.stream()
+                .mapToLong(OrderItem::calculateCurrentAmount)
+                .sum();
+    }
 }

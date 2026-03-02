@@ -5,12 +5,10 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import nbcamp.food_order_platform.order.domain.Order;
-import nbcamp.food_order_platform.order.domain.OrderItem;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.annotation.CreatedDate;
 
-import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -40,6 +38,7 @@ public class Payment {
     @Column(nullable = false)
     private PaymentMethod payment_method;
 
+
     @Column(nullable = false)
     private boolean is_deleted = false;
 
@@ -51,8 +50,13 @@ public class Payment {
 
     private LocalDateTime deleted_at;
 
+   // 주문 금액과 결제 정보 동기화
+    public void syncAmount(Long newOrderTotal) {
+        long difference = this.total_amount - newOrderTotal;
 
-
+        if (difference > 0) {
+            this.canceled_amount += difference;
+            this.total_amount = newOrderTotal;
+        }
+    }
 }
-
-
