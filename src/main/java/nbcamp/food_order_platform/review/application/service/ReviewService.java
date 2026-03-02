@@ -70,7 +70,7 @@ public class ReviewService {
     }
 
     // 리뷰 수정 (상태 변경) (MASTER,MANAGER)
-    public PatchReviewResDto updateReviewStatus(UUID reviewId, User user, PatchReviewStatusReqDto dto) {
+    public PatchReviewResDto changeReviewStatus(UUID reviewId, User user, PatchReviewStatusReqDto dto) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 리뷰입니다."));
 
