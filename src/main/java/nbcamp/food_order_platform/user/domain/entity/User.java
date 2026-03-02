@@ -1,6 +1,7 @@
 package nbcamp.food_order_platform.user.domain.entity;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import nbcamp.food_order_platform.global.common.BaseEntity;
@@ -34,4 +35,13 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Builder
+    private User(String username, String email,
+                 String password, String nickname, Role role) {
+        this.username = username;
+        this.email = email;
+        this.password = password;
+        this.nickname = nickname;
+        this.role = role;
+    }
 }
