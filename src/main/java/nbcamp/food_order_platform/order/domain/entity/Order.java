@@ -81,7 +81,7 @@ public class Order {
     //특정 주문 상품 취소
     public void cancelOrderItem(UUID orderItemId, Long cancelCount) {
         OrderItem targetItem = this.orderItems.stream()
-                .filter(item -> item.getId().equals(orderItemId))
+                .filter(item -> item.getOrderItemId().equals(orderItemId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("해당 상품이 주문 내역에 없습니다."));
 
