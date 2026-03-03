@@ -2,7 +2,7 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: ["chore/hajin/ci-setup"]
+    branches: ["main"]
 
 jobs:
   deploy:
