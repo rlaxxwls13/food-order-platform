@@ -29,7 +29,7 @@ public class ReviewService {
 
     private final UserRepository userRepository;
 
-    // 리뷰 작성
+    // 1. 리뷰 작성
     public PostReviewResDto createReview(CreateReviewDto dto) {
         // userId로 User 조회
         User user = userRepository.findById(dto.getUserId())
@@ -49,18 +49,10 @@ public class ReviewService {
 
         Review saved = reviewRepository.save(review);
 
-        return PostReviewResDto.builder()
-                .reviewId(saved.getReviewId())
-                .storeId(saved.getStoreId())
-                .nickname(saved.getNickname())
-                .rating(saved.getRating())
-                .content(saved.getContent())
-                .status(saved.getStatus())
-                .createdAt(saved.getCreatedAt())
-                .build();
+        return PostReviewResDto.from(saved);
     }
 
-    // 리뷰 수정 (CUSTOMER)
+    // 2-1. 리뷰 수정 (CUSTOMER)
     public PatchReviewResDto updateReview(UUID reviewId, Long userId, PatchReviewReqDto dto) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 리뷰입니다."));
@@ -72,10 +64,10 @@ public class ReviewService {
 
         // 엔티티 수정 (JPA 더티 체킹 감지로 save 호출 안해도 됨)
         review.updateReview(dto.getRating(), dto.getContent());
-        return convertToPatchResDto(review);
+        return PatchReviewResDto.from(review);
     }
 
-    // 리뷰 수정 (상태 변경) (MASTER,MANAGER)
+    // 2-2. 리뷰 수정,상태 변경 (MASTER,MANAGER)
     public PatchReviewResDto changeReviewStatus(UUID reviewId, User user, PatchReviewStatusReqDto dto) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 리뷰입니다."));
@@ -89,23 +81,10 @@ public class ReviewService {
 
         // 엔티티의 updateStatus 메서드
         review.updateStatus(dto.getStatus());
-        // 변경된 결과를 PatchReviewResDto에 담아서 반환 (method)
-        return convertToPatchResDto(review);
+        return PatchReviewResDto.from(review);
     }
 
-    private static PatchReviewResDto convertToPatchResDto(Review review) {
-        return PatchReviewResDto.builder()
-                .reviewId(review.getReviewId())
-                .storeId(review.getStoreId())
-                .nickname(review.getNickname())
-                .rating(review.getRating())
-                .content(review.getContent())
-                .status(review.getStatus()) // 변경된 상태값
-                .updatedAt(review.getUpdatedAt())
-                .build();
-    }
-
-    // 리뷰 삭제
+    // 3. 리뷰 삭제
     public void deleteReview(UUID reviewId, Long currentUserId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 리뷰입니다."));
@@ -118,17 +97,17 @@ public class ReviewService {
         reviewRepository.delete(review);
     }
 
-    // 리뷰 조회 - 가게 리뷰(CUSTOMER)
+    // 4-1. 리뷰 조회 - 가게 리뷰(CUSTOMER)
     @Transactional(readOnly = true)
     public List<GetReviewCustomerResDto> getReviewsByStoreForCustomer(UUID storeId) {
         // 해당 가게의 리뷰 중 VISIBLE 상태인 것만 가져와 Customer DTO로 반환
         return reviewRepository.findAllByStoreId(storeId).stream()
                 .filter(r -> r.getStatus() == ReviewStatus.VISIBLE)
-                .map(this::convertToCustomerDto)
+                .map(GetReviewCustomerResDto::from)
                 .collect(Collectors.toList());
     }
 
-    // 리뷰 조회 - 가게 리뷰 (관리자용)
+    // 4-2. 리뷰 조회 - 가게 리뷰(MASTER/MANAGER)
     @Transactional(readOnly = true)
     public List<GetReviewManagerResDto> getReviewsByStoreForManager(UUID storeId, User currentUser) {
         // 권한 체크
@@ -138,7 +117,7 @@ public class ReviewService {
 
         // 해당 가게의 모든 리뷰를 가져와서 Manager DTO로 반환 (상태값 포함)
         return reviewRepository.findAllByStoreId(storeId).stream()
-                .map(this::convertToManagerDto)
+                .map(GetReviewManagerResDto::from)
                 .collect(Collectors.toList());
     }
 
@@ -152,37 +131,10 @@ public class ReviewService {
         // 다른 유저가 볼 수있는 것이라 VISIBLE 상태인 리뷰만 필터링해서 반환
         return reviews.stream()
                 .filter(review -> review.getStatus() == ReviewStatus.VISIBLE)
-                .map(review -> GetReviewCustomerResDto.builder()
-                        .reviewId(review.getReviewId())
-                        .nickname(review.getNickname())
-                        .rating(review.getRating())
-                        .content(review.getContent())
-                        .createdAt(review.getCreatedAt())
-                        .build())
+                .map(GetReviewCustomerResDto::from)
                 .collect(Collectors.toList());
     }
 
-    // 반환 메서드 (CUSTOMER)
-    private GetReviewCustomerResDto convertToCustomerDto(Review review) {
-        return GetReviewCustomerResDto.builder()
-                .reviewId(review.getReviewId())
-                .nickname(review.getNickname())
-                .rating(review.getRating())
-                .content(review.getContent())
-                .createdAt(review.getCreatedAt())
-                .build();
-    }
-    // 반환 메서드 (MASTER,MANAGER)
-    private GetReviewManagerResDto convertToManagerDto(Review review) {
-        return GetReviewManagerResDto.builder()
-                .reviewId(review.getReviewId())
-                .nickname(review.getNickname())
-                .rating(review.getRating())
-                .content(review.getContent())
-                .createdAt(review.getCreatedAt())
-                .status(review.getStatus())
-                .build();
-    }
 
 //  리뷰 작성시 검증 로직 메서드
 //  private void validateOrder(UUID orderId, Long userId) {
