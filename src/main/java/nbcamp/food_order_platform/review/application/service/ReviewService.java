@@ -8,6 +8,7 @@ import nbcamp.food_order_platform.review.domain.repository.ReviewRepository;
 import nbcamp.food_order_platform.review.presentation.dto.*;
 import nbcamp.food_order_platform.user.domain.Role;
 import nbcamp.food_order_platform.user.domain.User;
+import nbcamp.food_order_platform.user.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,17 +27,22 @@ public class ReviewService {
     // TODO: 내일 Store 객체 머지 후 주석 해제, 리뷰 갯수와 총 별점 갯수 갱신 로직 추가 예정.
     // private final StoreRepository storeRepository;
 
+    private final UserRepository userRepository;
+
     // 리뷰 작성
     public PostReviewResDto createReview(CreateReviewDto dto) {
+        // userId로 User 조회
+        User user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() ->new IllegalArgumentException("존재하지 않는 회원입니다."));
 
         // TODO: 내일 Order 객체 머지 후 주석 해제 및 검증 로직 연결
         // validateOrder(dto.getOrderId(), dto.getUser().getId());
 
         Review review = Review.builder()
-                .orderId(dto.getOrderId()) // 머지 전까진 컨트롤러에서 임시 UUID를 넘겨줄 예정
-                .storeId(dto.getStoreId()) // 머지 전까진 컨트롤러에서 임시 UUID를 넘겨줄 예정
-                .user(dto.getUser())
-                .nickname(dto.getUser().getNickname())
+                .orderId(dto.getOrderId())
+                .storeId(dto.getStoreId())
+                .user(user)                      // 조회한 User 객체
+                .nickname(user.getNickname())     // User에서 꺼냄
                 .rating(dto.getRating())
                 .content(dto.getContent())
                 .build();
