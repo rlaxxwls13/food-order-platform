@@ -1,6 +1,6 @@
-package nbcamp.food_order_platform.product.repository;
+package nbcamp.food_order_platform.product.domain.repository;
 
-import nbcamp.food_order_platform.product.entity.Product;
+import nbcamp.food_order_platform.product.domain.entity.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

@@ -1,7 +1,8 @@
 package nbcamp.food_order_platform.product.repository;
 
 import jakarta.persistence.EntityManager;
-import nbcamp.food_order_platform.product.entity.Product;
+import nbcamp.food_order_platform.product.domain.repository.ProductRepository;
+import nbcamp.food_order_platform.product.domain.entity.Product;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

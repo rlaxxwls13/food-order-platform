@@ -1,4 +1,4 @@
-package nbcamp.food_order_platform.product.entity;
+package nbcamp.food_order_platform.product.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
