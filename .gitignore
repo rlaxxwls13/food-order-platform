@@ -357,4 +357,8 @@ gradle-app.setting
 src/main/resources/application-local.yml
 src/main/resources/application-prod.yml
 
+# IntelliJ
+.idea/
+*.iml
+
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,java,intellij,git,maven,gradle,netbeans,eclipse,visualstudiocode
