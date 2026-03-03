@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -148,10 +149,9 @@ public class ReviewService {
     Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new IllegalArgumentException("주문없음"));//new CustomException(ErrorCode.NOT_EXISTED_ORDER));
     // 2. 본인 주문 확인
-    if (!order.getUserId().equals(userId)) {
-        //throw new CustomException(ErrorCode.NO_PERMISSION);
-        throw new IllegalArgumentException("본인 주문이 아님");
-    }
+      if (!Objects.equals(order.getUser().getUserId(), userId)) {
+          throw new IllegalArgumentException("본인 주문이 아님");
+      }
     // 3. 주문 완료 상태 확인
     if (order.getOrderStatus() != OrderStatus.COMPLETED) {
         //throw new CustomException(ErrorCode.ORDER_NOT_COMPLETE);
