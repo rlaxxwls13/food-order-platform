@@ -42,7 +42,7 @@ class ProductRepositoryTest {
         em.flush();
         em.clear();
 
-        // deleted 처리 (softDelete + save)  ※ 현재 엔티티에는 @SQLDelete가 없으므로 delete() 쓰면 물리삭제됩니다.
+        // deleted 처리 (softDelete + save)
         Product toDelete = productRepository.findById(deleted.getId()).orElseThrow();
         toDelete.softDelete(1L);
         productRepository.save(toDelete);
