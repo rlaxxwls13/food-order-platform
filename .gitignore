@@ -355,6 +355,6 @@ gradle-app.setting
 
 ### Security ###
 src/main/resources/application-local.yml
-src/main/resources/application-prod.yml
+#src/main/resources/application-prod.yml
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,java,intellij,git,maven,gradle,netbeans,eclipse,visualstudiocode
