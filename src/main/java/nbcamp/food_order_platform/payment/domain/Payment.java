@@ -21,7 +21,7 @@ public class Payment {
 
     @Id
     @GeneratedValue
-    private UUID id;
+    private UUID paymentId;
 
     @OneToOne
     @JoinColumn(name = "order_id")

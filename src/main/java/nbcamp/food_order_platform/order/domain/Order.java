@@ -25,7 +25,7 @@ public class Order {
     @Id
     @GeneratedValue
     @Column(columnDefinition = "BINARY(16)")
-    private UUID id;
+    private UUID orderId;
 
     //유저 ID
 //    @ManyToOne(fetch = FetchType.LAZY)

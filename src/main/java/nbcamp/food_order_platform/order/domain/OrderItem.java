@@ -20,7 +20,7 @@ public class OrderItem {
     @Id
     @GeneratedValue
     @Column(columnDefinition = "BINARY(16)")
-    private UUID id;
+    private UUID orderItemId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
