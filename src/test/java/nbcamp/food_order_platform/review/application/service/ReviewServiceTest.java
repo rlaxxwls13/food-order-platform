@@ -1,12 +1,15 @@
 package nbcamp.food_order_platform.review.application.service;
 
+import nbcamp.food_order_platform.order.domain.entity.Order;
+import nbcamp.food_order_platform.order.domain.entity.OrderStatus;
+import nbcamp.food_order_platform.order.domain.repository.OrderRepository;
 import nbcamp.food_order_platform.review.application.dto.CreateReviewDto;
 import nbcamp.food_order_platform.review.domain.entity.Review;
 import nbcamp.food_order_platform.review.domain.entity.ReviewStatus;
 import nbcamp.food_order_platform.review.domain.repository.ReviewRepository;
 import nbcamp.food_order_platform.review.presentation.dto.*;
-import nbcamp.food_order_platform.user.domain.Role;
-import nbcamp.food_order_platform.user.domain.User;
+import nbcamp.food_order_platform.user.domain.entity.Role;
+import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,10 +43,15 @@ class ReviewServiceTest {
     private ReviewRepository reviewRepository;
 
     @Mock
+    private OrderRepository orderRepository;
+
+
+    @Mock
     private UserRepository userRepository;
 
     private User testUser;
     private User managerUser;
+    private Order testOrder; // 추가
     private Review testReview;
     private UUID reviewId;
     private UUID orderId;
@@ -51,6 +59,7 @@ class ReviewServiceTest {
 
     @BeforeEach
     void setUp() {
+        // id 랜덤 생성
         reviewId = UUID.randomUUID();
         orderId = UUID.randomUUID();
         storeId = UUID.randomUUID();
@@ -66,21 +75,30 @@ class ReviewServiceTest {
         given(managerUser.getUserId()).willReturn(2L);
         given(managerUser.getRole()).willReturn(Role.MANAGER);
 
+        // 추가: 테스트용 주문 (검증 통과용)
+        testOrder = mock(Order.class);
+        given(testOrder.getUser()).willReturn(testUser); // 본인 주문
+        given(testOrder.getOrderStatus()).willReturn(OrderStatus.COMPLETED); // 배달 완료
+
         // 테스트용 리뷰
         testReview = mock(Review.class);
         given(testReview.getReviewId()).willReturn(reviewId);
-        given(testReview.getOrderId()).willReturn(orderId);
+        given(testReview.getOrder()).willReturn(testOrder);
         given(testReview.getStoreId()).willReturn(storeId);
         given(testReview.getUser()).willReturn(testUser);
         given(testReview.getNickname()).willReturn("테스트유저");
         given(testReview.getRating()).willReturn(5);
         given(testReview.getContent()).willReturn("맛있어요");
         given(testReview.getStatus()).willReturn(ReviewStatus.VISIBLE);
+
+        testOrder = mock(Order.class);
+        given(testOrder.getUser()).willReturn(testUser); // 본인 주문 통과용
+        given(testOrder.getOrderStatus()).willReturn(OrderStatus.COMPLETED); // 배달 완료 통과용
     }
 
 
-    // 1. 리뷰 작성 테스트
 
+    // 1. 리뷰 작성 테스트
     @Nested
     @DisplayName("리뷰 작성")
     class CreateReview {
@@ -98,6 +116,10 @@ class ReviewServiceTest {
                     .build();
 
             given(userRepository.findById(1L)).willReturn(Optional.of(testUser));
+
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(testOrder));
+            given(reviewRepository.existsByOrderId(orderId)).willReturn(false);
+
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
             given(testReview.getCreatedAt()).willReturn(LocalDateTime.now());
 
@@ -139,7 +161,6 @@ class ReviewServiceTest {
 
 
     // 2-1. 리뷰 수정 테스트
-
     @Nested
     @DisplayName("리뷰 수정 (CUSTOMER)")
     class UpdateReview {
@@ -190,7 +211,6 @@ class ReviewServiceTest {
 
 
     // 2-2. 리뷰 상태 변경 테스트
-
     @Nested
     @DisplayName("리뷰 상태 변경 (MANAGER/MASTER)")
     class ChangeReviewStatus {
@@ -238,9 +258,7 @@ class ReviewServiceTest {
         }
     }
 
-
     // 3. 리뷰 삭제 테스트
-
     @Nested
     @DisplayName("리뷰 삭제")
     class DeleteReview {
@@ -255,7 +273,7 @@ class ReviewServiceTest {
             reviewService.deleteReview(reviewId, 1L);
 
             // then
-            verify(reviewRepository, times(1)).delete(testReview);
+            verify(testReview, times(1)).softDelete(1L); // delete()에서 softDelete()로
         }
 
         @Test
@@ -283,7 +301,6 @@ class ReviewServiceTest {
         }
     }
 
-
     // 4. 리뷰 조회 테스트
     @Nested
     @DisplayName("리뷰 조회")
@@ -294,16 +311,28 @@ class ReviewServiceTest {
 
         @BeforeEach
         void setUpReviews() {
-            visibleReview = mock(Review.class);
-            given(visibleReview.getReviewId()).willReturn(UUID.randomUUID());
-            given(visibleReview.getNickname()).willReturn("유저1");
-            given(visibleReview.getRating()).willReturn(5);
-            given(visibleReview.getContent()).willReturn("맛있어요");
-            given(visibleReview.getStatus()).willReturn(ReviewStatus.VISIBLE);
-            given(visibleReview.getCreatedAt()).willReturn(LocalDateTime.now());
+            // 엔티티 객체 생성
+            visibleReview = Review.builder()
+                    .reviewId(UUID.randomUUID())
+                    .order(testOrder)
+                    .storeId(storeId)
+                    .user(testUser)
+                    .nickname("유저1")
+                    .rating(5)
+                    .content("맛있어요")
+                    .status(ReviewStatus.VISIBLE)
+                    .build();
 
-            hiddenReview = mock(Review.class);
-            given(hiddenReview.getStatus()).willReturn(ReviewStatus.HIDDEN);
+            hiddenReview = Review.builder()
+                    .reviewId(UUID.randomUUID())
+                    .order(testOrder)
+                    .storeId(storeId)
+                    .user(managerUser)
+                    .nickname("유저2")
+                    .rating(3)
+                    .content("별로에요")
+                    .status(ReviewStatus.HIDDEN)
+                    .build();
         }
 
         @Test
@@ -326,12 +355,6 @@ class ReviewServiceTest {
         @DisplayName("성공 - MANAGER가 가게 리뷰 조회 시 전체 보인다")
         void getReviewsByStore_manager() {
             // given
-            given(hiddenReview.getReviewId()).willReturn(UUID.randomUUID());
-            given(hiddenReview.getNickname()).willReturn("유저2");
-            given(hiddenReview.getRating()).willReturn(3);
-            given(hiddenReview.getContent()).willReturn("별로에요");
-            given(hiddenReview.getCreatedAt()).willReturn(LocalDateTime.now());
-
             given(reviewRepository.findAllByStoreId(storeId))
                     .willReturn(List.of(visibleReview, hiddenReview));
 
