@@ -33,7 +33,7 @@ public class Order {
 //    private User user;
     @Column(name = "user_id")
     @JdbcTypeCode(SqlTypes.UUID)
-    private UUID user_id;
+    private UUID userId;
 
     // 가게 머지후 교체
     //가게 ID
@@ -53,7 +53,7 @@ public class Order {
 //    private Address address;
     @Column(name = "address_id")
     @JdbcTypeCode(SqlTypes.UUID)
-    private UUID address_id;
+    private UUID addressId;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems = new ArrayList<>();
@@ -62,7 +62,7 @@ public class Order {
     private Payment payment;
 
     @Column(nullable = false)
-    private Long total_amount;
+    private Long totalAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -70,7 +70,7 @@ public class Order {
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
-    private LocalDateTime created_at; // 오타 수정: crated_at -> created_at
+    private LocalDateTime created_at;
 
     @LastModifiedDate
     @Column(nullable = false)
@@ -87,11 +87,11 @@ public class Order {
 
         targetItem.partialCanceled(cancelCount);
 
-        this.total_amount = recalculateTotalAmount();
+        this.totalAmount = recalculateTotalAmount();
 
         // 결제 정보 동기화 (payment 엔티티가 존재할 경우)
         if (this.payment != null) {
-            this.payment.syncAmount(this.total_amount);
+            this.payment.syncAmount(this.totalAmount);
         }
     }
 

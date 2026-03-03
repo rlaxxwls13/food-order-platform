@@ -44,13 +44,13 @@ public class OrderItem {
     @JdbcTypeCode(SqlTypes.UUID)
     private UUID storeId;
 
-    @Column(nullable = false)
-    private String store_name;
+    @Column(name = "store_name", nullable = false)
+    private String storeName;
 
-    @Column(nullable = false)
-    private String product_name;
+    @Column(name = "product_name", nullable = false)
+    private String productName;
 
-    @Column(nullable = false)
+    @Column(name = "quantity", nullable = false)
     private Long quantity;
 
     @Column(nullable = false)

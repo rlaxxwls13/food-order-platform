@@ -27,22 +27,23 @@ public class Payment {
     @JoinColumn(name = "order_id")
     private Order order;
 
-    @Column(nullable = false)
-    private Long total_amount;
+    @Column(name = "total_amount", nullable = false)
+    private Long totalAmount;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PaymentStatus payment_status;
+    @Column(name = "payment_status", nullable = false)
+    private PaymentStatus paymentStatus;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PaymentMethod payment_method;
+    @Column(name = "payment_method", nullable = false)
+    private PaymentMethod paymentMethod;
 
 
     @Column(nullable = false)
     private boolean is_deleted = false;
 
-    private Long canceled_amount = 0L;
+    @Column(name = "canceled_amount")
+    private Long canceledAmount = 0L;
 
     @CreatedDate
     @Column(nullable = false)
@@ -52,11 +53,11 @@ public class Payment {
 
    // 주문 금액과 결제 정보 동기화
     public void syncAmount(Long newOrderTotal) {
-        long difference = this.total_amount - newOrderTotal;
+        long difference = this.totalAmount - newOrderTotal;
 
         if (difference > 0) {
-            this.canceled_amount += difference;
-            this.total_amount = newOrderTotal;
+            this.canceledAmount += difference;
+            this.totalAmount = newOrderTotal;
         }
     }
 }
