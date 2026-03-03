@@ -1,10 +1,7 @@
-package nbcamp.food_order_platform.payment.domain;
+package nbcamp.food_order_platform.payment.domain.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 
 @Getter
 @RequiredArgsConstructor

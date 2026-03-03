@@ -1,9 +1,9 @@
-package nbcamp.food_order_platform.order.domain;
+package nbcamp.food_order_platform.order.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import nbcamp.food_order_platform.payment.domain.Payment;
+import nbcamp.food_order_platform.payment.domain.entity.Payment;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;

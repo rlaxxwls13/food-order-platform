@@ -1,4 +1,4 @@
-package nbcamp.food_order_platform.payment.domain;
+package nbcamp.food_order_platform.payment.domain.entity;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

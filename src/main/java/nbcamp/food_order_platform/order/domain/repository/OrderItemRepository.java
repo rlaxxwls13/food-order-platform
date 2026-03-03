@@ -1,5 +1,6 @@
-package nbcamp.food_order_platform.order.domain;
+package nbcamp.food_order_platform.order.domain.repository;
 
+import nbcamp.food_order_platform.order.domain.entity.OrderItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;
