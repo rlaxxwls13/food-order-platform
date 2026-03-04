@@ -34,11 +34,12 @@ public class ReviewService {
     // private final StoreRepository storeRepository;
 
     // 1. 리뷰 작성
+    @Transactional
     public PostReviewResDto createReview(CreateReviewDto dto) {
-        // 받아온 userId로 User 객체 조회
+        // 1. 받아온 userId로 User 객체 조회
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() ->new IllegalArgumentException("존재하지 않는 회원입니다."));
-        // 받아온 orderId로 Order 객체 조회하고
+        // 2. 받아온 orderId로 Order 객체 조회하고
         // Order와 User Id로 검증 절차 1-5(주문 존재/본인 여부/주문 완 료상태/3일이내/중복 리뷰 확인)
         // 해서 통과된 order만 받아서 리뷰 작성 가능.
         Order order = validateOrder(dto.getOrderId(), dto.getUserId());
@@ -46,7 +47,7 @@ public class ReviewService {
         // 검증 통과시 리뷰 작성 가능
         Review review = Review.builder()
                 .order(order)                   // 조회한 Order 객체 넣기
-                .storeId(dto.getStoreId())      //추후 수정 .store(dto.getStoreId())
+                .storeId(order.getStore())      //추후 수정 .store(order.getStore())
                 .user(user)                      // 조회한 User 객체 넣기
                 .nickname(user.getNickname())     // User에서 꺼냄
                 .rating(dto.getRating())
@@ -147,7 +148,9 @@ public class ReviewService {
     Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new IllegalArgumentException("주문없음"));//new CustomException(ErrorCode.NOT_EXISTED_ORDER));
     // 2. 본인 주문 확인
-      if (!Objects.equals(order.getUser().getUserId(), userId)) {
+      // Order에서 User 객체로 받아오면 해당 주석으로 변경
+      // if (!Objects.equals(order.getUser().getUserId(), userId)) {
+      if (!Objects.equals(order.getUserId(), userId)) {
           throw new IllegalArgumentException("본인 주문이 아님");
       }
     // 3. 주문 완료 상태 확인
@@ -162,7 +165,7 @@ public class ReviewService {
 //        throw new IllegalArgumentException("현재 시간이 주문 생성으로부터 3일 이내가 아님");
 //    }
     // 5. 중복 리뷰 확인
-    if (reviewRepository.existsByOrderId(orderId)) {
+    if (reviewRepository.existsByOrderOrderId(orderId)) {
         //throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
         throw new IllegalArgumentException("이미 해당 orderId로 리뷰가 존재함");
     }

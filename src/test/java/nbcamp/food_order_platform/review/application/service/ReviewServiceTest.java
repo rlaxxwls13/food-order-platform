@@ -60,7 +60,7 @@ class ReviewServiceTest {
 
     @BeforeEach
     void setUp() {
-        // id 랜덤 생성
+        // 필요한 Id 랜덤 생성
         reviewId = UUID.randomUUID();
         orderId = UUID.randomUUID();
         storeId = UUID.randomUUID();
@@ -76,10 +76,11 @@ class ReviewServiceTest {
         given(managerUser.getUserId()).willReturn(2L);
         given(managerUser.getRole()).willReturn(Role.MANAGER);
 
-        // 추가: 테스트용 주문 (검증 통과용)
+        // 테스트용 주문 설정 (여기저기 흩어진 걸 하나로 합침!)
         testOrder = mock(Order.class);
-        given(testOrder.getUser()).willReturn(testUser); // 본인 주문
-        given(testOrder.getOrderStatus()).willReturn(OrderStatus.COMPLETED); // 배달 완료
+        given(testOrder.getUserId()).willReturn(1L); // 본인 주문 검증 통과용 (testUser의 ID와 동일하게 1L 반환)
+        given(testOrder.getOrderStatus()).willReturn(OrderStatus.COMPLETED); // 상태 검증 통과용
+        given(testOrder.getStore()).willReturn(storeId); // ReviewService의 order.getStore() 호출 시 UUID 반환용
 
         // 테스트용 리뷰
         testReview = mock(Review.class);
@@ -91,12 +92,7 @@ class ReviewServiceTest {
         given(testReview.getRating()).willReturn(5);
         given(testReview.getContent()).willReturn("맛있어요");
         given(testReview.getStatus()).willReturn(ReviewStatus.VISIBLE);
-
-        testOrder = mock(Order.class);
-        given(testOrder.getUser()).willReturn(testUser); // 본인 주문 통과용
-        given(testOrder.getOrderStatus()).willReturn(OrderStatus.COMPLETED); // 배달 완료 통과용
     }
-
 
 
     // 1. 리뷰 작성 테스트
@@ -110,7 +106,6 @@ class ReviewServiceTest {
             // given
             CreateReviewDto dto = CreateReviewDto.builder()
                     .orderId(orderId)
-                    .storeId(storeId)
                     .userId(1L)
                     .rating(5)
                     .content("맛있어요")
@@ -119,7 +114,7 @@ class ReviewServiceTest {
             given(userRepository.findById(1L)).willReturn(Optional.of(testUser));
 
             given(orderRepository.findById(orderId)).willReturn(Optional.of(testOrder));
-            given(reviewRepository.existsByOrderId(orderId)).willReturn(false);
+            given(reviewRepository.existsByOrderOrderId(orderId)).willReturn(false);
 
             given(reviewRepository.save(any(Review.class))).willReturn(testReview);
             given(testReview.getCreatedAt()).willReturn(LocalDateTime.now());
@@ -143,7 +138,6 @@ class ReviewServiceTest {
             // given
             CreateReviewDto dto = CreateReviewDto.builder()
                     .orderId(orderId)
-                    .storeId(storeId)
                     .userId(999L)
                     .rating(5)
                     .content("맛있어요")
