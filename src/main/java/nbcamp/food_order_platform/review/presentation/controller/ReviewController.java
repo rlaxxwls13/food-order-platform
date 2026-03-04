@@ -11,7 +11,6 @@ import nbcamp.food_order_platform.review.presentation.dto.response.GetReviewCust
 import nbcamp.food_order_platform.review.presentation.dto.response.GetReviewManagerResDto;
 import nbcamp.food_order_platform.review.presentation.dto.response.PatchReviewResDto;
 import nbcamp.food_order_platform.review.presentation.dto.response.PostReviewResDto;
-import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,16 +29,19 @@ public class ReviewController {
     @PostMapping("/reviews")
     public ResponseEntity<PostReviewResDto> createReview(
             @Valid @RequestBody PostReviewReqDto reqDto
-            // @AuthenticationPrincipal User currentUser // 나중에 시큐리티 붙으면 쓸 것!
+            // @AuthenticationPrincipal UserDetailsImpl userDetails // 나중에 시큐리티 붙으면 쓸 것!
     ) {
-        // 지금은 임시로 userId를 1L이라고 가정
+        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
         Long currentUserId = 1L;
+
+        /*  시큐리티 적용 시 아래 주석 해제 예정
+        Long currentUserId = userDetails.getUser().getId()
+        */
 
         // 1. 받은 reqDto와 시스템이 아는 userId를 합쳐서
         // 2. Service 로 보낼 CreateReviewDto 생성
         CreateReviewDto serviceDto = CreateReviewDto.builder()
                 .orderId(reqDto.getOrderId())
-                //.storeId(reqDto.getOrderId().getStoreId())
                 .userId(currentUserId)
                 .rating(reqDto.getRating())
                 .content(reqDto.getContent())
@@ -54,11 +56,15 @@ public class ReviewController {
     @PatchMapping("/reviews/{reviewId}")
     public ResponseEntity<PatchReviewResDto> updateReview(
             @PathVariable UUID reviewId,
-            //@AuthenticationPrincipal UserDetails userDetails,
+            //@AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody PatchReviewReqDto reqDto) {
 
-        // 지금은 임시로 userId를 1L이라고 가정
+        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
         Long currentUserId = 1L;
+
+        /*  시큐리티 적용 시 아래 주석 해제 예정
+        Long currentUserId = userDetails.getUser().getId()
+        */
 
         PatchReviewResDto response = reviewService.updateReview(reviewId, currentUserId, reqDto);
         return ResponseEntity.ok(response);
@@ -70,15 +76,15 @@ public class ReviewController {
     @PatchMapping("/admin/reviews/{reviewId}/status")
     public ResponseEntity<PatchReviewResDto> changeReviewStatus(
             @PathVariable UUID reviewId,
-            // @AuthenticationPrincipal User currentUser
+            //@AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody PatchReviewStatusReqDto dto) {
 
-        // 지금은 임시로 MANAGER 권한을 가진 유저 객체를 생성해서 넘김
-        // 추후 인증구현시 변경
-        User managerUser = User.builder()
-                .userId(2L)
-                .role(Role.MANAGER) // 권한 체크 통과를 위해 MANAGER로 설정
-                .build();
+        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
+        User managerUser = null; // 이상태로 하면 NPE터짐!
+
+        /*  시큐리티 적용 시 아래 주석 해제 예정
+        User managerUser = userDetails.getUser();
+        */
 
         PatchReviewResDto response = reviewService.changeReviewStatus(reviewId, managerUser, dto);
         return ResponseEntity.ok(response);
@@ -87,9 +93,16 @@ public class ReviewController {
      * 3. 리뷰 삭제
      */
     @DeleteMapping("/reviews/{reviewId}")
-    public ResponseEntity<Void> deleteReview(@PathVariable UUID reviewId) {
-        // 지금은 임시로 userId를 1L이라고 가정
+    public ResponseEntity<Void> deleteReview(
+            @PathVariable UUID reviewId
+            //,@AuthenticationPrincipal UserDetailsImpl userDetails
+            ) {
+        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
         Long currentUserId = 1L;
+
+        /*  시큐리티 적용 시 아래 주석 해제 예정
+        Long currentUserId = userDetails.getUser().getId();
+        */
 
         reviewService.deleteReview(reviewId, currentUserId);
 
@@ -109,13 +122,16 @@ public class ReviewController {
      */
     @GetMapping("/admin/reviews/stores/{storeId}")
     public ResponseEntity<List<GetReviewManagerResDto>> getStoreReviewsForManager(
-            @PathVariable UUID storeId) {
+            @PathVariable UUID storeId
+            //,@AuthenticationPrincipal UserDetailsImpl userDetails
+            ) {
 
-        // 권한 체크를 위해 임시 MANAGER 객체 생성
-        User managerUser = User.builder()
-                .userId(2L)
-                .role(Role.MANAGER)
-                .build();
+        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
+        User managerUser = null; // 이상태로 하면 NPE터짐!
+
+        /*  시큐리티 적용 시 아래 주석 해제 예정
+        User managerUser = userDetails.getUser();
+        */
 
         return ResponseEntity.ok(reviewService.getReviewsByStoreForManager(storeId, managerUser));
     }

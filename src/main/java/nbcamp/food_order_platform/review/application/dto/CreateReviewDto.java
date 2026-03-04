@@ -14,7 +14,6 @@ import java.util.UUID;
 public class CreateReviewDto { // 리뷰 작성, service에서 사용
 
     private UUID orderId;
-    private UUID storeId;
     private Long userId;
     private int rating;
     private String content;
