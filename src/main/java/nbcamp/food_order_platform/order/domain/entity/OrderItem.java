@@ -2,9 +2,8 @@ package nbcamp.food_order_platform.order.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import nbcamp.food_order_platform.global.common.BaseEntity;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
@@ -13,9 +12,7 @@ import java.util.UUID;
 @Entity(name = "p_order_item")
 @NoArgsConstructor
 @Getter
-@SQLDelete(sql = "UPDATE p_order_item SET deleted_at = NOW() WHERE id = ?")
-@SQLRestriction("deleted_at IS NULL")
-public class OrderItem {
+public class OrderItem extends BaseEntity {
 
     @Id
     @GeneratedValue

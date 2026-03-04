@@ -4,9 +4,8 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import nbcamp.food_order_platform.global.common.BaseEntity;
 import nbcamp.food_order_platform.order.domain.entity.Order;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
@@ -15,9 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity(name = "p_payment")
 @Getter
-@SQLDelete(sql = "UPDATE p_payment SET deleted_at = NOW()  WHERE id = ?")
-@SQLRestriction("deleted_at IS NULL")
-public class Payment {
+public class Payment extends BaseEntity {
 
     @Id
     @GeneratedValue
