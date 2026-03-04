@@ -213,6 +213,36 @@ class StoreRepositoryTest {
         );
     }
 
+    @DisplayName("removeRating: 리뷰가 있으면 누적 합/카운트가 감소한다")
+    @Test
+    void removeRating_decrements_sum_and_count_when_review_exists() {
+        Store store = new Store(1L, 10L, "store");
+
+        store.addNewRating(5);
+        store.addNewRating(3); // sum=8, count=2
+
+        store.removeRating(5); // sum=3, count=1
+
+        assertAll(
+                () -> assertThat(store.getTotalRatingSum()).isEqualTo(3),
+                () -> assertThat(store.getReviewCount()).isEqualTo(1)
+        );
+    }
+
+    @DisplayName("removeRating: 리뷰가 0개면 아무 변화가 없다")
+    @Test
+    void removeRating_does_nothing_when_review_count_is_zero() {
+        Store store = new Store(1L, 10L, "store");
+
+        // 초기값이 sum=0, count=0
+        store.removeRating(5);
+
+        assertAll(
+                () -> assertThat(store.getTotalRatingSum()).isEqualTo(0),
+                () -> assertThat(store.getReviewCount()).isEqualTo(0)
+        );
+    }
+
     @DisplayName("getRating: 리뷰가 없으면 0, 있으면 소수점 첫째자리로 반올림한 평균을 반환한다")
     @Test
     void getRating_returns_rounded_average() {
