@@ -8,8 +8,8 @@ import java.util.UUID;
 public class PostProductReqDto {
     private UUID storeId;
     private String name;
-    private Long price;
-    private Integer stockQuantity;
+    private int price;
+    private int stockQuantity;
     private boolean useAi;
     private String description;
 }
