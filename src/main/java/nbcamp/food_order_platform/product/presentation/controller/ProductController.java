@@ -1,4 +1,4 @@
-package nbcamp.food_order_platform.product.presentation.conrtoller;
+package nbcamp.food_order_platform.product.presentation.controller;
 
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.product.application.dto.CreateProductDto;
@@ -17,7 +17,15 @@ public class ProductController {
 
     @PostMapping("/products")
     public ResponseEntity<PostProductResDto> createProduct(@RequestBody PostProductReqDto requestDto) {
-        CreateProductDto productDto = new CreateProductDto(requestDto);
+        CreateProductDto productDto = new CreateProductDto(
+                requestDto.getStoreId(),
+                requestDto.getName(),
+                requestDto.getStockQuantity(),
+                requestDto.getPrice(),
+                requestDto.getDescription(),
+                requestDto.isUseAi()
+        );
+
         ResponseEntity<PostProductResDto> response = productService.createProduct(productDto);
         return response;
     }
