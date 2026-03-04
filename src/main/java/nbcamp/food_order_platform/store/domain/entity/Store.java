@@ -2,6 +2,7 @@ package nbcamp.food_order_platform.store.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import nbcamp.food_order_platform.global.common.BaseEntity;
@@ -40,6 +41,7 @@ public class Store extends BaseEntity {
     @Column(name = "version", nullable = false)
     private Long version;
 
+    @Builder
     public Store(Long ownerId, Long regionId, String name) {
         validate(ownerId, regionId, name);
         this.ownerId = ownerId;
