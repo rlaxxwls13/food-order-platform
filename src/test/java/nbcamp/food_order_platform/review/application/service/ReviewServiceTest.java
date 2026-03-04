@@ -78,7 +78,9 @@ class ReviewServiceTest {
 
         // 테스트용 주문 설정 (여기저기 흩어진 걸 하나로 합침!)
         testOrder = mock(Order.class);
-        given(testOrder.getUserId()).willReturn(1L); // 본인 주문 검증 통과용 (testUser의 ID와 동일하게 1L 반환)
+        // ‼️‼️‼️‼️
+        // Order에서 userId 타입을 Long으로 변경해야합니다
+        // given(testOrder.getUserId()).willReturn(1L); // 본인 주문 검증 통과용 (testUser의 ID와 동일하게 1L 반환)
         given(testOrder.getOrderStatus()).willReturn(OrderStatus.COMPLETED); // 상태 검증 통과용
         given(testOrder.getStore()).willReturn(storeId); // ReviewService의 order.getStore() 호출 시 UUID 반환용
 
