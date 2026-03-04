@@ -8,14 +8,14 @@ import nbcamp.food_order_platform.review.application.dto.CreateReviewDto;
 import nbcamp.food_order_platform.review.domain.entity.Review;
 import nbcamp.food_order_platform.review.domain.entity.ReviewStatus;
 import nbcamp.food_order_platform.review.domain.repository.ReviewRepository;
-import nbcamp.food_order_platform.review.presentation.dto.*;
+import nbcamp.food_order_platform.review.presentation.dto.request.*;
+import nbcamp.food_order_platform.review.presentation.dto.response.*;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -33,8 +33,6 @@ public class ReviewService {
     // TODO: 내일 Store 객체 머지 후 주석 해제, 리뷰 갯수와 총 별점 갯수 갱신 로직 추가 예정.
     // private final StoreRepository storeRepository;
 
-
-
     // 1. 리뷰 작성
     public PostReviewResDto createReview(CreateReviewDto dto) {
         // 받아온 userId로 User 객체 조회
@@ -48,7 +46,7 @@ public class ReviewService {
         // 검증 통과시 리뷰 작성 가능
         Review review = Review.builder()
                 .order(order)                   // 조회한 Order 객체 넣기
-                .storeId(dto.getStoreId())
+                .storeId(dto.getStoreId())      //추후 수정 .store(dto.getStoreId())
                 .user(user)                      // 조회한 User 객체 넣기
                 .nickname(user.getNickname())     // User에서 꺼냄
                 .rating(dto.getRating())
