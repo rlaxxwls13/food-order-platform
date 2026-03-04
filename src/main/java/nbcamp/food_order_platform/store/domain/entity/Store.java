@@ -85,6 +85,13 @@ public class Store extends BaseEntity {
         this.reviewCount += 1;
     }
 
+    public void removeRating(int rating) {
+        if (this.reviewCount > 0) {
+            this.totalRatingSum -= rating;
+            this.reviewCount -= 1;
+        }
+    }
+
     public double getRating() {
         if(reviewCount == 0)
             return 0;
