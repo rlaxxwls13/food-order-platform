@@ -145,7 +145,7 @@ public class Store extends BaseEntity {
         }
     }
 
-    public double getRating() {
+    public double getAverageRating() {
         if(reviewCount == 0)
             return 0;
         double rating = (double) totalRatingSum / reviewCount;

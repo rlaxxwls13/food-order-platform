@@ -262,13 +262,13 @@ class StoreRepositoryTest {
         RegionCode rc = persistRegionCode("서울", true);
         Store store = new Store(1L, "store", rc, "detail", List.of());
 
-        double r0 = store.getRating();
+        double r0 = store.getAverageRating();
 
         store.addNewRating(5);
         store.addNewRating(4);
         store.addNewRating(4);
 
-        double r1 = store.getRating();
+        double r1 = store.getAverageRating();
 
         assertAll(
                 () -> assertThat(r0).isEqualTo(0.0),
