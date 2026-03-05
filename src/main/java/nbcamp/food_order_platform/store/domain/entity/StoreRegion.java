@@ -8,16 +8,18 @@ import nbcamp.food_order_platform.global.common.BaseEntity;
 import nbcamp.food_order_platform.regionCode.domain.entity.RegionCode;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.util.UUID;
+
 @Entity
-@Table(name = "store_region")
+@Table(name = "p_store_region")
 @SQLRestriction("deleted_at IS NULL")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class StoreRegion extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "region_id", nullable = false, updatable = false)
-    private Long id;
+    private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "store_id", nullable = false, unique = true, updatable = false)

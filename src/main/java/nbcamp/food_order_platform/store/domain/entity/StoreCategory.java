@@ -8,16 +8,18 @@ import nbcamp.food_order_platform.category.domain.entity.Category;
 import nbcamp.food_order_platform.global.common.BaseEntity;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.util.UUID;
+
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @SQLRestriction("deleted_at IS NULL")
 @Entity
-@Table(name = "store_category")
+@Table(name = "p_store_category")
 public class StoreCategory extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "store_category_id", nullable = false, updatable = false)
-    private Long id;
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "store_id", nullable = false, updatable = false)

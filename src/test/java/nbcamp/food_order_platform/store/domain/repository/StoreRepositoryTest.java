@@ -25,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class StoreRepositoryTest {
 
-    private static final String STORE_CATEGORY_TABLE = "store_category";
-    private static final String STORE_REGION_TABLE = "store_region";
+    private static final String STORE_CATEGORY_TABLE = "p_store_category";
+    private static final String STORE_REGION_TABLE = "p_store_region";
 
     @Autowired
     private StoreRepository storeRepository;
@@ -400,12 +400,12 @@ class StoreRepositoryTest {
         return c;
     }
 
-    private Timestamp nativeDeletedAtForStoreCategory(UUID storeId, Long categoryId) {
-        Object v = em.createNativeQuery(
+    private Timestamp nativeDeletedAtForStoreCategory(UUID storeId, UUID categoryId) {
+        List<?> rows = em.createNativeQuery(
                         "select deleted_at from " + STORE_CATEGORY_TABLE + " where store_id = :storeId and category_id = :catId")
                 .setParameter("storeId", storeId)
                 .setParameter("catId", categoryId)
-                .getSingleResult();
-        return (Timestamp) v; // null이면 여기서 NPE가 아니라 ClassCast/NoResult가 나므로 필요시 getResultList로 방어 가능
+                .getResultList();
+        return rows.isEmpty() ? null : (Timestamp) rows.get(0);
     }
 }

@@ -6,15 +6,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import nbcamp.food_order_platform.global.common.BaseEntity;
 
+import java.util.UUID;
+
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "category")
+@Table(name = "p_category")
 public class Category extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "category_id", nullable = false, updatable = false)
-    private Long id;
+    private UUID id;
 
     @Column(name = "name", nullable = false, length = 255)
     private String name;

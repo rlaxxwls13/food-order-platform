@@ -5,16 +5,18 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "region_code")
+@Table(name = "p_region_code")
 public class RegionCode {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "region_code", nullable = false, updatable = false)
-    private Long code;
+    private UUID code;
 
     @Column(name = "region_name", nullable = false, length = 100)
     private String regionName;
