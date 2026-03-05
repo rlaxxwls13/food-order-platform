@@ -18,6 +18,7 @@ import nbcamp.food_order_platform.user.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -151,7 +152,6 @@ public class ReviewService {
     Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new IllegalArgumentException("주문없음"));//new CustomException(ErrorCode.NOT_EXISTED_ORDER));
     // 2. 본인 주문 확인
-      // Order에서 User 객체로 받아오면 해당 주석으로 변경
        if (!Objects.equals(order.getUser().getUserId(), userId)) {
           throw new IllegalArgumentException("본인 주문이 아님");
       }
@@ -161,11 +161,10 @@ public class ReviewService {
         throw new IllegalArgumentException("주문이 완료 상태가 아님");
     }
     // 4. 3일 이내 확인
-//    Order에 BaseEntity 상속후 주석 해제 예정
-//    if (order.getCreatedAt().plusDays(3).isBefore(LocalDateTime.now())) {
-//        //throw new CustomException(ErrorCode.VALIDATION_FAILED);
-//        throw new IllegalArgumentException("현재 시간이 주문 생성으로부터 3일 이내가 아님");
-//    }
+    if (order.getCreatedAt().plusDays(3).isBefore(LocalDateTime.now())) {
+        //throw new CustomException(ErrorCode.VALIDATION_FAILED);
+        throw new IllegalArgumentException("현재 시간이 주문 생성으로부터 3일 이내가 아님");
+    }
     // 5. 중복 리뷰 확인
     if (reviewRepository.existsByOrderOrderId(orderId)) {
         //throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
