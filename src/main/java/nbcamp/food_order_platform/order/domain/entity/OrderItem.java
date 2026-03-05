@@ -63,7 +63,6 @@ public class OrderItem extends BaseEntity {
     @Column(nullable = true)
     private String reason;
 
-    private LocalDateTime deleted_at;
 
     //부분 취소 처리
     public void partialCanceled(Long count) {
