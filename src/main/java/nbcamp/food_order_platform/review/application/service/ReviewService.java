@@ -10,6 +10,8 @@ import nbcamp.food_order_platform.review.domain.entity.ReviewStatus;
 import nbcamp.food_order_platform.review.domain.repository.ReviewRepository;
 import nbcamp.food_order_platform.review.presentation.dto.request.*;
 import nbcamp.food_order_platform.review.presentation.dto.response.*;
+import nbcamp.food_order_platform.store.domain.entity.Store;
+import nbcamp.food_order_platform.store.domain.repository.StoreRepository;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
@@ -29,25 +31,26 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
-
-    // TODO: 내일 Store 객체 머지 후 주석 해제, 리뷰 갯수와 총 별점 갯수 갱신 로직 추가 예정.
-    // private final StoreRepository storeRepository;
+    private final StoreRepository storeRepository;
 
     // 1. 리뷰 작성
     @Transactional
     public PostReviewResDto createReview(CreateReviewDto dto) {
         // 1. 받아온 userId로 User 객체 조회
         User user = userRepository.findById(dto.getUserId())
-                .orElseThrow(() ->new IllegalArgumentException("존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
         // 2. 받아온 orderId로 Order 객체 조회하고
         // Order와 User Id로 검증 절차 1-5(주문 존재/본인 여부/주문 완 료상태/3일이내/중복 리뷰 확인)
         // 해서 통과된 order만 받아서 리뷰 작성 가능.
         Order order = validateOrder(dto.getOrderId(), dto.getUserId());
 
+        Store store = storeRepository.findById(order.getStore())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가게입니다."));
+
         // 검증 통과시 리뷰 작성 가능
         Review review = Review.builder()
                 .order(order)                   // 조회한 Order 객체 넣기
-                .storeId(order.getStore())      //추후 수정 .store(order.getStore())
+                .store(store)                   // 조회한 Store 객체 넣기, 추후 .store(order.getStore())
                 .user(user)                      // 조회한 User 객체 넣기
                 .nickname(user.getNickname())     // User에서 꺼냄
                 .rating(dto.getRating())

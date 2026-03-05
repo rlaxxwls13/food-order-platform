@@ -28,7 +28,7 @@ public class PostReviewResDto { // 리뷰 작성 응답
     public static PostReviewResDto from(Review review) {
         return PostReviewResDto.builder()
                 .reviewId(review.getReviewId())
-                .storeId(review.getStoreId())
+                .storeId(review.getStore().getId())
                 .nickname(review.getNickname())
                 .rating(review.getRating())
                 .content(review.getContent())

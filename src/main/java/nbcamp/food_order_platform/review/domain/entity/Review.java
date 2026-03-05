@@ -4,9 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import nbcamp.food_order_platform.global.common.BaseEntity;
 import nbcamp.food_order_platform.order.domain.entity.Order;
+import nbcamp.food_order_platform.store.domain.entity.Store;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 
@@ -32,13 +32,10 @@ public class Review extends BaseEntity {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-//    추후 머지 되면 교체
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "store_id", nullable = false)
-//    private Store store;
-    @Column(name = "store_id", nullable = false)
-    @JdbcTypeCode(SqlTypes.UUID)
-    private UUID storeId;
+    //  교체 완료
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
 
     // 교체 완료
     @ManyToOne(fetch = FetchType.LAZY)

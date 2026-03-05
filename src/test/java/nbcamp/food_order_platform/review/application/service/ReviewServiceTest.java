@@ -9,6 +9,8 @@ import nbcamp.food_order_platform.review.domain.entity.ReviewStatus;
 import nbcamp.food_order_platform.review.domain.repository.ReviewRepository;
 import nbcamp.food_order_platform.review.presentation.dto.request.*;
 import nbcamp.food_order_platform.review.presentation.dto.response.*;
+import nbcamp.food_order_platform.store.domain.entity.Store;
+import nbcamp.food_order_platform.store.domain.repository.StoreRepository;
 import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
@@ -46,13 +48,16 @@ class ReviewServiceTest {
     @Mock
     private OrderRepository orderRepository;
 
+    @Mock
+    private StoreRepository storeRepository;
 
     @Mock
     private UserRepository userRepository;
 
     private User testUser;
     private User managerUser;
-    private Order testOrder; // 추가
+    private Order testOrder;
+    private Store testStore;
     private Review testReview;
     private UUID reviewId;
     private UUID orderId;
@@ -76,19 +81,25 @@ class ReviewServiceTest {
         given(managerUser.getUserId()).willReturn(2L);
         given(managerUser.getRole()).willReturn(Role.MANAGER);
 
+        // 테스트용 가게 설정
+        testStore = mock(Store.class);
+
         // 테스트용 주문 설정 (여기저기 흩어진 걸 하나로 합침!)
         testOrder = mock(Order.class);
+
         // ‼️‼️‼️‼️
         // Order에서 userId 타입을 Long으로 변경해야합니다
         // given(testOrder.getUserId()).willReturn(1L); // 본인 주문 검증 통과용 (testUser의 ID와 동일하게 1L 반환)
         given(testOrder.getOrderStatus()).willReturn(OrderStatus.COMPLETED); // 상태 검증 통과용
         given(testOrder.getStore()).willReturn(storeId); // ReviewService의 order.getStore() 호출 시 UUID 반환용
+        given(testOrder.getUser()).willReturn(testUser);
 
         // 테스트용 리뷰
         testReview = mock(Review.class);
         given(testReview.getReviewId()).willReturn(reviewId);
         given(testReview.getOrder()).willReturn(testOrder);
-        given(testReview.getStoreId()).willReturn(storeId);
+        given(testStore.getId()).willReturn(storeId); // 가게 객체가 자신의 ID를 갖게 함
+        given(testReview.getStore()).willReturn(testStore); // 리뷰가 가게 객체를 반환하게 함
         given(testReview.getUser()).willReturn(testUser);
         given(testReview.getNickname()).willReturn("테스트유저");
         given(testReview.getRating()).willReturn(5);
@@ -114,6 +125,8 @@ class ReviewServiceTest {
                     .build();
 
             given(userRepository.findById(1L)).willReturn(Optional.of(testUser));
+
+            given(storeRepository.findById(storeId)).willReturn(Optional.of(testStore));
 
             given(orderRepository.findById(orderId)).willReturn(Optional.of(testOrder));
             given(reviewRepository.existsByOrderOrderId(orderId)).willReturn(false);
@@ -312,7 +325,7 @@ class ReviewServiceTest {
             visibleReview = Review.builder()
                     .reviewId(UUID.randomUUID())
                     .order(testOrder)
-                    .storeId(storeId)
+                    .store(testStore)
                     .user(testUser)
                     .nickname("유저1")
                     .rating(5)
@@ -323,7 +336,7 @@ class ReviewServiceTest {
             hiddenReview = Review.builder()
                     .reviewId(UUID.randomUUID())
                     .order(testOrder)
-                    .storeId(storeId)
+                    .store(testStore)
                     .user(managerUser)
                     .nickname("유저2")
                     .rating(3)
