@@ -1,4 +1,4 @@
-package nbcamp.food_order_platform.review.application.dto.request;
+package nbcamp.food_order_platform.review.application.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,13 +12,13 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UpdateReviewStatusDto {
+public class UpdateReviewStatusCommand {
 
     private UUID reviewId;
     private Long userId;
     private ReviewStatus status;
 
-    public static UpdateReviewStatusDto of(UUID reviewId, Long userId,ReviewStatus status) {
-        return new UpdateReviewStatusDto(reviewId,userId,status);
+    public static UpdateReviewStatusCommand of(UUID reviewId, Long userId, ReviewStatus status) {
+        return new UpdateReviewStatusCommand(reviewId,userId,status);
     }
 }

@@ -1,10 +1,9 @@
-package nbcamp.food_order_platform.review.presentation.dto.response;
+package nbcamp.food_order_platform.review.application.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import nbcamp.food_order_platform.review.domain.entity.Review;
-import nbcamp.food_order_platform.review.domain.entity.ReviewStatus;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -12,26 +11,21 @@ import java.util.UUID;
 @Getter
 @Builder
 @AllArgsConstructor
-public class PatchReviewResDto {
-
+public class GetReviewCustomerResult {
     private UUID reviewId;
-    private UUID storeId;
     private String nickname;
     private int rating;
     private String content;
-    private ReviewStatus status;
-    private LocalDateTime updatedAt;
+    private LocalDateTime createdAt;
+    // status 없음
 
-    public static PatchReviewResDto from(Review review) {
-        return PatchReviewResDto.builder()
+    public static GetReviewCustomerResult from(Review review) {
+        return GetReviewCustomerResult.builder()
                 .reviewId(review.getReviewId())
-                .storeId(review.getStore().getId())
                 .nickname(review.getNickname())
                 .rating(review.getRating())
                 .content(review.getContent())
-                .status(review.getStatus())
-                .updatedAt(review.getUpdatedAt())
+                .createdAt(review.getCreatedAt())
                 .build();
     }
 }
-

@@ -1,4 +1,4 @@
-package nbcamp.food_order_platform.review.application.dto.request;
+package nbcamp.food_order_platform.review.application.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PostReviewDto { // 리뷰 작성, service에서 사용
+public class CreateReviewCommand { // 리뷰 작성, service에서 사용
 
     private Long userId;
     private UUID orderId;
@@ -19,8 +19,8 @@ public class PostReviewDto { // 리뷰 작성, service에서 사용
     private String content;
 
     // 컨트롤러에서 변환할 때 사용할 정적 팩토리 메서드
-    public static PostReviewDto of(Long userId, UUID orderId, int rating, String content) {
-        return new PostReviewDto(userId, orderId, rating, content);
+    public static CreateReviewCommand of(Long userId, UUID orderId, int rating, String content) {
+        return new CreateReviewCommand(userId, orderId, rating, content);
     }
 }
 
