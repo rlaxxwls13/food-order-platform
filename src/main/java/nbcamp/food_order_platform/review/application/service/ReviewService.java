@@ -53,7 +53,7 @@ public class ReviewService {
         // 검증 통과시 리뷰 작성 가능
         Review review = Review.builder()
                 .order(order)                   // 조회한 Order 객체 넣기
-                .store(store)                   // 조회한 Store 객체 넣기, 추후 .store(order.getStore())
+                .store(store)                   // 조회한 Store 객체 넣기
                 .user(user)                      // 조회한 User 객체 넣기
                 .nickname(user.getNickname())     // User에서 꺼냄
                 .rating(dto.getRating())
@@ -61,6 +61,7 @@ public class ReviewService {
                 .build();
 
         Review saved = reviewRepository.save(review);
+        store.addNewRating(dto.getRating()); // 주문한 가게의 총 평점 수 증가
 
         return CreateReviewResult.from(saved);
     }
@@ -75,12 +76,18 @@ public class ReviewService {
             throw new IllegalArgumentException("리뷰 수정 권한이 없습니다.");
         }
 
-        // 1. 엔티티 수정 (JPA 더티 체킹 감지로 save 호출 안해도 됨)
+        // 스토어 통계 업데이트 (수정된 리뷰의 별점 계산)
+        Store store = review.getStore();
+        int oldRating = review.getRating(); // 수정 전에 준 별점 저장(기존 별점)
+        store.removeRating(oldRating);       // 기존 별점을 통계에서 빼기
+        store.addNewRating(dto.getRating()); // 새로 바뀐 별점을 통계에 더하기
+
+        // 엔티티 수정 (JPA 더티 체킹 감지로 save 호출 안해도 됨)
         review.updateReview(dto.getRating(), dto.getContent());
         return UpdateReviewResult.from(review);
     }
 
-    // 2-2. 리뷰 수정,상태 변경 (MASTER,MANAGER)
+    // 2-2. 리뷰 상태 변경 (MASTER,MANAGER)
     public UpdateReviewResult changeReviewStatus(UpdateReviewStatusCommand dto) {
         Review review = reviewRepository.findById(dto.getReviewId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 리뷰입니다."));
@@ -106,6 +113,9 @@ public class ReviewService {
         if (!review.getUser().getUserId().equals(dto.getUserId())) {
             throw new IllegalArgumentException("본인의 리뷰만 삭제할 수 있습니다.");
         }
+        // 스토어 통계 업데이트 (삭제되는 리뷰의 별점 빼기)
+        Store store = review.getStore();
+        store.removeRating(review.getRating());
 
         review.softDelete(dto.getUserId());
     }
