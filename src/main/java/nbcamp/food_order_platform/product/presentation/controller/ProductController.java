@@ -3,8 +3,8 @@ package nbcamp.food_order_platform.product.presentation.controller;
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.product.application.dto.CreateProductDto;
 import nbcamp.food_order_platform.product.application.service.ProductService;
-import nbcamp.food_order_platform.product.presentation.dto.PostProductReqDto;
-import nbcamp.food_order_platform.product.presentation.dto.PostProductResDto;
+import nbcamp.food_order_platform.product.presentation.dto.request.PostProductReqDto;
+import nbcamp.food_order_platform.product.presentation.dto.response.PostProductResDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,7 +26,7 @@ public class ProductController {
                 requestDto.isUseAi()
         );
 
-        ResponseEntity<PostProductResDto> response = productService.createProduct(productDto);
-        return response;
+        CreateProductDto result = productService.createProduct(productDto);
+        return ResponseEntity.ok(new PostProductResDto(result));
     }
 }
