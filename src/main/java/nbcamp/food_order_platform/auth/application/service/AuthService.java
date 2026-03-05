@@ -1,8 +1,8 @@
 package nbcamp.food_order_platform.auth.application.service;
 
 import lombok.RequiredArgsConstructor;
-import nbcamp.food_order_platform.auth.presentation.dto.PostAuthReqDto;
-import nbcamp.food_order_platform.auth.presentation.dto.PostAuthResDto;
+import nbcamp.food_order_platform.auth.application.dto.LoginAuthCommand;
+import nbcamp.food_order_platform.auth.application.dto.LoginAuthResult;
 import nbcamp.food_order_platform.global.security.JwtUtil;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
@@ -19,17 +19,17 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public PostAuthResDto login(PostAuthReqDto postAuthReqDto){
-        User user = findUserByUsername(postAuthReqDto.getUsername());
+    public LoginAuthResult login(LoginAuthCommand loginAuthCommand){
+        User user = findUserByUsername(loginAuthCommand.username());
 
-        validatePassword(postAuthReqDto.getPassword(), user.getPassword());
+        validatePassword(loginAuthCommand.password(), user.getPassword());
 
         String accessToken = jwtUtil.generateAccessToken(
                 user.getUsername(),
                 user.getUserId(),
                 user.getRole()
         );
-        return new PostAuthResDto(accessToken);
+        return new LoginAuthResult(accessToken);
     }
 
     private User findUserByUsername(String username){
