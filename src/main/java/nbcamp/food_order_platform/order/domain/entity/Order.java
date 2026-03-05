@@ -5,14 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import nbcamp.food_order_platform.global.common.BaseEntity;
 import nbcamp.food_order_platform.payment.domain.entity.Payment;
-import nbcamp.food_order_platform.user.domain.entity.Address;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -40,15 +35,11 @@ public class Order extends BaseEntity {
     @JdbcTypeCode(SqlTypes.UUID)
     private UUID store;
 
-//    주소 머지후 교체 (교체 완료 )
+    //    주소 머지후 교체 (교체 완료 )
 //    주소 ID
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "address_id")
-    private Address address;
-//    @Column(name = "address_id")
-//    @JdbcTypeCode(SqlTypes.UUID)
-//    private UUID addressId;
-//
+    @Embedded
+    private OrderAddress snapshotAddress;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems = new ArrayList<>();
 
@@ -61,16 +52,6 @@ public class Order extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus orderStatus;
-
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime created_at;
-
-    @LastModifiedDate
-    @Column(nullable = false)
-    private LocalDateTime updated_at;
-
-    private LocalDateTime deleted_at;
 
     //특정 주문 상품 취소
     public void cancelOrderItem(UUID orderItemId, Long cancelCount) {
