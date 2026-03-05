@@ -1,8 +1,8 @@
 package nbcamp.food_order_platform.user.presentation.controller;
 
 import jakarta.validation.Valid;
+import nbcamp.food_order_platform.global.security.AuthUser;
 import nbcamp.food_order_platform.user.application.service.UserService;
-import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.presentation.dto.GetUserResDto;
 import nbcamp.food_order_platform.user.presentation.dto.SignupRequestDto;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,12 +25,12 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public GetUserResDto information(@AuthenticationPrincipal User user){
+    public GetUserResDto information(@AuthenticationPrincipal AuthUser authUser){
 
         return new GetUserResDto(
-                user.getUserId(),
-                user.getUsername(),
-                user.getRole()
+                authUser.getUserId(),
+                authUser.getUsername(),
+                authUser.getRole()
         );
     }
 }
