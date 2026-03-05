@@ -16,7 +16,8 @@ public class OrderItem extends BaseEntity {
 
     @Id
     @GeneratedValue
-    @Column(columnDefinition = "BINARY(16)")
+    @JdbcTypeCode(SqlTypes.UUID)
+    @Column(name = "order_id", updatable = false, nullable = false)
     private UUID orderItemId;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -63,7 +64,6 @@ public class OrderItem extends BaseEntity {
     @Column(nullable = true)
     private String reason;
 
-    private LocalDateTime deleted_at;
 
     //부분 취소 처리
     public void partialCanceled(Long count) {

@@ -11,7 +11,7 @@ import java.util.UUID;
 public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
     // 주문 존재 여부 반환
-    boolean existsByOrderId(UUID orderId);
+    boolean existsByOrderOrderId(UUID orderId);
 
     // 특정 가게의 리뷰만 조회
     List<Review> findAllByStoreId(UUID storeId);
