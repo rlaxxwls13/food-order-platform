@@ -18,7 +18,8 @@ import java.util.UUID;
 public class Order extends BaseEntity {
     @Id
     @GeneratedValue
-    @Column(columnDefinition = "BINARY(16)")
+    @JdbcTypeCode(SqlTypes.UUID)
+    @Column(name = "order_id", updatable = false, nullable = false)
     private UUID orderId;
 
     //유저 ID

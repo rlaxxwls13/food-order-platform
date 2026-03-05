@@ -16,7 +16,8 @@ public class OrderItem extends BaseEntity {
 
     @Id
     @GeneratedValue
-    @Column(columnDefinition = "BINARY(16)")
+    @JdbcTypeCode(SqlTypes.UUID)
+    @Column(name = "order_id", updatable = false, nullable = false)
     private UUID orderItemId;
 
     @ManyToOne(fetch = FetchType.LAZY)
