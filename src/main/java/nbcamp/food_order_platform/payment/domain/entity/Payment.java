@@ -35,18 +35,9 @@ public class Payment extends BaseEntity {
     @Column(name = "payment_method", nullable = false)
     private PaymentMethod paymentMethod;
 
-
-    @Column(nullable = false)
-    private boolean is_deleted = false;
-
     @Column(name = "canceled_amount")
     private Long canceledAmount = 0L;
 
-    @CreatedDate
-    @Column(nullable = false)
-    private LocalDateTime created_at;
-
-    private LocalDateTime deleted_at;
 
    // 주문 금액과 결제 정보 동기화
     public void syncAmount(Long newOrderTotal) {
