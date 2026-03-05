@@ -149,8 +149,7 @@ public class ReviewService {
             .orElseThrow(() -> new IllegalArgumentException("주문없음"));//new CustomException(ErrorCode.NOT_EXISTED_ORDER));
     // 2. 본인 주문 확인
       // Order에서 User 객체로 받아오면 해당 주석으로 변경
-      // if (!Objects.equals(order.getUser().getUserId(), userId)) {
-      if (!Objects.equals(order.getUserId(), userId)) {
+       if (!Objects.equals(order.getUser().getUserId(), userId)) {
           throw new IllegalArgumentException("본인 주문이 아님");
       }
     // 3. 주문 완료 상태 확인
