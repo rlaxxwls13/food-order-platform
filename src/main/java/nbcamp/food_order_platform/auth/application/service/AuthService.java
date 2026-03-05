@@ -20,7 +20,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
 
     public LoginAuthResult login(LoginAuthCommand loginAuthCommand){
-        User user = findUserByUsername(loginAuthCommand.username());
+        User user = getUserByUsername(loginAuthCommand.username());
 
         validatePassword(loginAuthCommand.password(), user.getPassword());
 
@@ -32,7 +32,7 @@ public class AuthService {
         return new LoginAuthResult(accessToken);
     }
 
-    private User findUserByUsername(String username){
+    private User getUserByUsername(String username){
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("잘못된 아이디 입니다."));
                 //추후에 GlobalExceptionHandler ErrorCode로 변경
