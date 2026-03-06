@@ -9,5 +9,5 @@ public record PaymentCreateCommand(
         @NotNull UUID orderId,
         @NotNull PaymentMethod method,
         @Positive Long amount, // 0원 이하는 결제 불가
-        @NotNull UUID userId
+        @NotNull Long userId
 ) {}

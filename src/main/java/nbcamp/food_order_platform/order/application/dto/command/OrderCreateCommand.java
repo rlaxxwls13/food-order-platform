@@ -11,7 +11,7 @@ public record OrderCreateCommand(
         String comment,
         @NotEmpty List<OrderItemCommand> items,
         @NotNull UUID addressId,
-        @NotNull UUID userId
+        @NotNull Long userId
 ) {
     public record OrderItemCommand(
             @NotNull UUID productId,

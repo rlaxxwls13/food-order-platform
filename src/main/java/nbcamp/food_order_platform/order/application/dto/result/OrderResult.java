@@ -19,5 +19,5 @@ public record OrderResult(
         LocalDateTime createdAt,
         UserInfo userInfo
 ) {
-    public record UserInfo(UUID userId, String userName) {}
+    public record UserInfo(Long userId, String userName) {}
 }
