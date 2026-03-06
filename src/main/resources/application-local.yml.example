@@ -8,3 +8,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+
+
+ai:
+  openai:
+    api-key : ${API-KEY}
