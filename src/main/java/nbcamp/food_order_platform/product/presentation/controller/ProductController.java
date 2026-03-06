@@ -39,4 +39,21 @@ public class ProductController {
         CreateProductResult result = productService.createProduct(productDto);
         return ResponseEntity.ok(new PostProductResDto(result));
     }
+
+    @PatchMapping("/products/{productId}")
+    public ResponseEntity<PatchProductResDto> updateProduct(@PathVariable UUID productId, @RequestBody PatchProductReqDto requestDto) {
+
+        UpdateProductCommand productDto = new UpdateProductCommand(
+                productId,
+                requestDto.getName(),
+                requestDto.getDescription(),
+                requestDto.getAddStockQuantity(),
+                requestDto.getSetStockQuantity(),
+                requestDto.getPrice(),
+                requestDto.getUseAi()
+        );
+
+        UpdateProductResult result = productService.updateProduct(productDto);
+        return ResponseEntity.ok(new PatchProductResDto(result));
+    }
 }

@@ -1,13 +1,16 @@
 package nbcamp.food_order_platform.product.presentation.dto.response;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
-import nbcamp.food_order_platform.product.application.dto.result.CreateProductResult;
+import nbcamp.food_order_platform.product.application.dto.result.UpdateProductResult;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
-public class PostProductResDto {
+@AllArgsConstructor
+public class PatchProductResDto {
     private UUID productId;
     private UUID storeId;
     private String name;
@@ -15,10 +18,9 @@ public class PostProductResDto {
     private int stockQuantity;
     private String description;
     private boolean isHidden;
-    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
-
-    public PostProductResDto(CreateProductResult result) {
+    public PatchProductResDto(UpdateProductResult result) {
         this.productId = result.getProductId();
         this.storeId = result.getStoreId();
         this.name = result.getName();
@@ -26,6 +28,6 @@ public class PostProductResDto {
         this.stockQuantity = result.getStockQuantity();
         this.description = result.getDescription();
         this.isHidden = result.isHidden();
-        this.createdAt = result.getCreatedAt();
+        this.updatedAt = result.getUpdatedAt();
     }
 }
