@@ -1,6 +1,7 @@
 package nbcamp.food_order_platform.review.application.service;
 
 import lombok.RequiredArgsConstructor;
+<<<<<<< Updated upstream
 import nbcamp.food_order_platform.order.domain.entity.Order;
 import nbcamp.food_order_platform.order.domain.entity.OrderStatus;
 import nbcamp.food_order_platform.order.domain.repository.OrderRepository;
@@ -191,6 +192,18 @@ public class ReviewService {
       return order;
  }
 
+=======
+import nbcamp.food_order_platform.review.domain.repository.ReviewRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class ReviewService {
+
+    private final ReviewRepository reviewRepository;
+>>>>>>> Stashed changes
 
 
 }
