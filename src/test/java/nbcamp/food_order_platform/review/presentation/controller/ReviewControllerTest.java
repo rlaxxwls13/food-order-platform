@@ -13,6 +13,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -145,31 +148,28 @@ class ReviewControllerTest {
     void getStoreReviewsForCustomer_success() throws Exception {
         // given
         UUID storeId = UUID.randomUUID();
-
-        GetReviewCustomerResult review1 = GetReviewCustomerResult.builder()
-                .reviewId(UUID.randomUUID())
-                .nickname("배부른강아지")
-                .rating(5)
-                .content("진짜 인생 맛집이에요!")
+        GetReviewCustomerResult resultDto1 = GetReviewCustomerResult.builder()
+                .nickname("강아지")
+                .content("맛있어요")
                 .build();
 
-        GetReviewCustomerResult review2 = GetReviewCustomerResult.builder()
-                .reviewId(UUID.randomUUID())
-                .nickname("배고픈고양이")
-                .rating(4)
-                .content("양도 많고 맛있어요.")
+        GetReviewCustomerResult resultDto2 = GetReviewCustomerResult.builder()
+                .nickname("고양이")
+                .content("흠~")
                 .build();
 
-        given(reviewService.getReviewsByStoreForCustomer(storeId)).willReturn(List.of(review1, review2));
+        Slice<GetReviewCustomerResult> sliceResponse = new SliceImpl<>(List.of(resultDto1, resultDto2));
+        given(reviewService.getReviewsByStoreForCustomer(any(UUID.class), any(Pageable.class)))
+                .willReturn(sliceResponse);
 
         // when & then
         mockMvc.perform(get("/api/v1/reviews/stores/{storeId}", storeId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
+                        .param("page", "0")
+                        .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].nickname").value("배부른강아지"))
-                .andExpect(jsonPath("$[1].rating").value(4));
+                .andExpect(jsonPath("$.content[0].nickname").value("강아지"))
+                .andExpect(jsonPath("$.content[1].nickname").value("고양이"))
+                .andExpect(jsonPath("$.hasNext").value(false));
     }
 
     @Test
@@ -178,27 +178,26 @@ class ReviewControllerTest {
         // given
         UUID storeId = UUID.randomUUID();
 
-        GetReviewManagerResult review1 = GetReviewManagerResult.builder()
-                .reviewId(UUID.randomUUID())
-                .nickname("최고영이")
+        GetReviewManagerResult resultDto1 = GetReviewManagerResult.builder()
+                .nickname("악플러")
+                .content("맛있어요")
+                .status(ReviewStatus.HIDDEN)
+                .build();
+
+        GetReviewManagerResult resultDto2 = GetReviewManagerResult.builder()
+                .nickname("강아지")
+                .content("맛있어요")
                 .status(ReviewStatus.VISIBLE)
                 .build();
 
-        GetReviewManagerResult review2 = GetReviewManagerResult.builder()
-                .reviewId(UUID.randomUUID())
-                .nickname("악플러")
-                .status(ReviewStatus.HIDDEN) // 매니저니까 숨김도 보임
-                .build();
+        Slice<GetReviewManagerResult> sliceResponse = new SliceImpl<>(List.of(resultDto1, resultDto2));
+        given(reviewService.getReviewsByStoreForManager(any())).willReturn(sliceResponse);
 
-        given(reviewService.getReviewsByStoreForManager(any(GetReviewManagerQuery.class)))
-                .willReturn(List.of(review1, review2));
 
         // when & then
-        mockMvc.perform(get("/api/v1/admin/reviews/stores/{storeId}", storeId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andDo(print())
+        mockMvc.perform(get("/api/v1/admin/reviews/stores/{storeId}", storeId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[1].status").value("HIDDEN"));
+                .andExpect(jsonPath("$.content[0].status").value("VISIBLE"))
+                .andExpect(jsonPath("$.content[1].status").value("HIDDEN"));
     }
 }
