@@ -1,7 +1,7 @@
 package nbcamp.food_order_platform.product.presentation.dto.response;
 
 import lombok.Getter;
-import nbcamp.food_order_platform.product.application.dto.CreateProductDto;
+import nbcamp.food_order_platform.product.application.dto.result.CreateProductResult;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -18,7 +18,7 @@ public class PostProductResDto {
     private LocalDateTime createdAt;
 
 
-    public PostProductResDto(CreateProductDto productDto) {
+    public PostProductResDto(CreateProductResult productDto) {
         this.productId = productDto.getProductId();
         this.storeId = productDto.getStoreId();
         this.name = productDto.getName();
@@ -26,6 +26,6 @@ public class PostProductResDto {
         this.stockQuantity = productDto.getStockQuantity();
         this.description = productDto.getDescription();
         this.isHidden = productDto.isHidden();
-        this.createdAt = productDto.getCreateAt();
+        this.createdAt = productDto.getCreatedAt();
     }
 }
