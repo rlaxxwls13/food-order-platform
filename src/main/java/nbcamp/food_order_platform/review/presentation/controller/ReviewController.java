@@ -13,6 +13,10 @@ import nbcamp.food_order_platform.review.application.dto.GetReviewManagerResult;
 import nbcamp.food_order_platform.review.application.dto.UpdateReviewResult;
 import nbcamp.food_order_platform.review.application.dto.CreateReviewResult;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -94,31 +98,50 @@ public class ReviewController {
      * 4-1. 가게별 리뷰 조회(CUSTOMER용 - VISIBLE만 노출)
      */
     @GetMapping("/reviews/stores/{storeId}")
-    public ResponseEntity<List<GetReviewCustomerResult>> getStoreReviewsForCustomer(
-            @PathVariable UUID storeId) {
-        return ResponseEntity.ok(reviewService.getReviewsByStoreForCustomer(storeId));
+    public ResponseEntity<Slice<GetReviewCustomerResult>> getStoreReviewsForCustomer(
+            @PathVariable UUID storeId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        return ResponseEntity.ok(reviewService.getReviewsByStoreForCustomer(storeId,pageable));
     }
     /**
      * 4-2. 가게별 리뷰 조회 (MANAGER용 - 전체 노출)
      */
     @GetMapping("/admin/reviews/stores/{storeId}")
-    public ResponseEntity<List<GetReviewManagerResult>> getStoreReviewsForManager(
+    public ResponseEntity<Slice<GetReviewManagerResult>> getStoreReviewsForManager(
             @PathVariable UUID storeId,
-            @AuthenticationPrincipal AuthUser authUser
+            @AuthenticationPrincipal AuthUser authUser,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
             ) {
 
         Long managerUserId = authUser.getUserId();
 
-        GetReviewManagerQuery serviceDto = GetReviewManagerQuery.forManager(storeId,managerUserId);
+        GetReviewManagerQuery serviceDto = GetReviewManagerQuery.storeForManager(storeId,managerUserId,pageable);
         return ResponseEntity.ok(reviewService.getReviewsByStoreForManager(serviceDto));
     }
     /**
-     * 5. 특정 유저가 작성한 리뷰 목록 조회
+     * 5. 특정 유저가 작성한 리뷰 목록 조회(CUSTOMER - 전체 노출)
      */
     @GetMapping("/reviews/users/{userId}")
-    public ResponseEntity<List<GetReviewCustomerResult>> getUserReviews(
-            @PathVariable Long userId) {
-        return ResponseEntity.ok(reviewService.getReviewsByUser(userId));
+    public ResponseEntity<Slice<GetReviewCustomerResult>> getReviewsByUserForCustomer(
+            @PathVariable Long userId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        return ResponseEntity.ok(reviewService.getReviewsByUserForCustomer(userId,pageable));
+    }
+    /**
+     *  5-2. 특정 유저 리뷰 조회 (MANAGER용 - 전체 노출)
+     */
+    @GetMapping("/admin/reviews/users/{userId}")
+    public ResponseEntity<Slice<GetReviewManagerResult>> getUserReviewsForManager(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal AuthUser authUser,
+            @PageableDefault(size = 10) Pageable pageable) {
+
+        Long managerUserId = authUser.getUserId();
+
+        GetReviewManagerQuery serviceDto = GetReviewManagerQuery.userForManager(userId,managerUserId,pageable);
+        return ResponseEntity.ok(reviewService.getReviewsByUserForManager(serviceDto));
     }
 
 }
