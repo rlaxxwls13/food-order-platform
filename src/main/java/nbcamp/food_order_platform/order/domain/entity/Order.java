@@ -36,10 +36,10 @@ public class Order extends BaseEntity {
     @JdbcTypeCode(SqlTypes.UUID)
     private UUID store;
 
-    //    주소 머지후 교체 (교체 완료 )
+    //    주소 머지후 교체
 //    주소 ID
-    @Embedded
-    private OrderAddress snapshotAddress;
+//    @Embedded
+//    private OrderAddress snapshotAddress;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems = new ArrayList<>();
