@@ -17,6 +17,7 @@ public class OrderItem extends BaseEntity {
     @Id
     @GeneratedValue
     @JdbcTypeCode(SqlTypes.UUID)
+
     @Column(name = "order_item_id", updatable = false, nullable = false)
     private UUID orderItemId;
 
