@@ -18,6 +18,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
 
+    @Transactional
     public CreateProductResult createProduct(CreateProductCommand productDto) {
         //validateOwner(storeId, userId); 가게 주인 확인
 
@@ -44,8 +45,8 @@ public class ProductService {
         //ai log 저장
 
         return new CreateProductResult(
-                saved.getStoreId(),
                 saved.getId(),
+                saved.getStoreId(),
                 saved.getName(),
                 saved.getQuantity(),
                 saved.getPrice(),
