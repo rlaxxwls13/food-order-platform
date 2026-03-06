@@ -8,4 +8,3 @@ public record OrderAddressResDto(
         String roadName,
         String detailName
 ) {
-}
