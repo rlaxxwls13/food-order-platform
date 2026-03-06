@@ -1,4 +1,4 @@
-package nbcamp.food_order_platform.review.presentation.dto;
+package nbcamp.food_order_platform.review.presentation.dto.request;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

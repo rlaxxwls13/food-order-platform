@@ -1,4 +1,4 @@
-package nbcamp.food_order_platform.review.presentation.dto;
+package nbcamp.food_order_platform.review.presentation.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,7 +25,7 @@ public class PatchReviewResDto {
     public static PatchReviewResDto from(Review review) {
         return PatchReviewResDto.builder()
                 .reviewId(review.getReviewId())
-                .storeId(review.getStoreId())
+                .storeId(review.getStore().getId())
                 .nickname(review.getNickname())
                 .rating(review.getRating())
                 .content(review.getContent())

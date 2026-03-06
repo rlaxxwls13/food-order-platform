@@ -1,18 +1,26 @@
 package nbcamp.food_order_platform.review.application.service;
 
 import lombok.RequiredArgsConstructor;
+import nbcamp.food_order_platform.order.domain.entity.Order;
+import nbcamp.food_order_platform.order.domain.entity.OrderStatus;
+import nbcamp.food_order_platform.order.domain.repository.OrderRepository;
 import nbcamp.food_order_platform.review.application.dto.CreateReviewDto;
 import nbcamp.food_order_platform.review.domain.entity.Review;
 import nbcamp.food_order_platform.review.domain.entity.ReviewStatus;
 import nbcamp.food_order_platform.review.domain.repository.ReviewRepository;
-import nbcamp.food_order_platform.review.presentation.dto.*;
-import nbcamp.food_order_platform.user.domain.Role;
-import nbcamp.food_order_platform.user.domain.User;
+import nbcamp.food_order_platform.review.presentation.dto.request.*;
+import nbcamp.food_order_platform.review.presentation.dto.response.*;
+import nbcamp.food_order_platform.store.domain.entity.Store;
+import nbcamp.food_order_platform.store.domain.repository.StoreRepository;
+import nbcamp.food_order_platform.user.domain.entity.User;
+import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -22,26 +30,29 @@ import java.util.stream.Collectors;
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
-    // TODO: 내일 머지 후 주석 해제
-    // private final OrderRepository orderRepository;
-    // TODO: 내일 Store 객체 머지 후 주석 해제, 리뷰 갯수와 총 별점 갯수 갱신 로직 추가 예정.
-    // private final StoreRepository storeRepository;
-
+    private final OrderRepository orderRepository;
     private final UserRepository userRepository;
+    private final StoreRepository storeRepository;
 
     // 1. 리뷰 작성
+    @Transactional
     public PostReviewResDto createReview(CreateReviewDto dto) {
-        // userId로 User 조회
+        // 1. 받아온 userId로 User 객체 조회
         User user = userRepository.findById(dto.getUserId())
-                .orElseThrow(() ->new IllegalArgumentException("존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+        // 2. 받아온 orderId로 Order 객체 조회하고
+        // Order와 User Id로 검증 절차 1-5(주문 존재/본인 여부/주문 완 료상태/3일이내/중복 리뷰 확인)
+        // 해서 통과된 order만 받아서 리뷰 작성 가능.
+        Order order = validateOrder(dto.getOrderId(), dto.getUserId());
 
-        // TODO: 내일 Order 객체 머지 후 주석 해제 및 검증 로직 연결
-        // validateOrder(dto.getOrderId(), dto.getUser().getId());
+        Store store = storeRepository.findById(order.getStore())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가게입니다."));
 
+        // 검증 통과시 리뷰 작성 가능
         Review review = Review.builder()
-                .orderId(dto.getOrderId())
-                .storeId(dto.getStoreId())
-                .user(user)                      // 조회한 User 객체
+                .order(order)                   // 조회한 Order 객체 넣기
+                .store(store)                   // 조회한 Store 객체 넣기, 추후 .store(order.getStore())
+                .user(user)                      // 조회한 User 객체 넣기
                 .nickname(user.getNickname())     // User에서 꺼냄
                 .rating(dto.getRating())
                 .content(dto.getContent())
@@ -72,8 +83,6 @@ public class ReviewService {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 리뷰입니다."));
 
-        Role userRole = user.getRole();
-
         // 권한 체크: 매니저도 아니고 마스터도 아니라면 에러
         if (user.getRole() != Role.MANAGER && user.getRole() != Role.MASTER) {
             throw new IllegalArgumentException("매니저 또는 마스터 권한이 필요합니다.");
@@ -94,7 +103,7 @@ public class ReviewService {
             throw new IllegalArgumentException("본인의 리뷰만 삭제할 수 있습니다.");
         }
 
-        reviewRepository.delete(review);
+        review.softDelete(currentUserId);
     }
 
     // 4-1. 리뷰 조회 - 가게 리뷰(CUSTOMER)
@@ -137,27 +146,32 @@ public class ReviewService {
 
 
 //  리뷰 작성시 검증 로직 메서드
-//  private void validateOrder(UUID orderId, Long userId) {
-//    // 1. 주문 존재 확인
-//    Order order = orderRepository.findById(orderId)
-//            .orElseThrow(() -> new CustomException(ErrorCode.NOT_EXISTED_ORDER));
-//    // 2. 본인 주문 확인
-//    if (!order.getUserId().equals(userId)) {
-//        throw new CustomException(ErrorCode.NO_PERMISSION);
-//    }
-//    // 3. 주문 완료 상태 확인
-//    if (order.getStatus() != OrderStatus.COMPLETE) {
-//        throw new CustomException(ErrorCode.ORDER_NOT_COMPLETE);
-//    }
-//    // 4. 3일 이내 확인
-//    if (order.getCreatedAt().plusDays(3).isBefore(LocalDateTime.now())) {
-//        throw new CustomException(ErrorCode.VALIDATION_FAILED);
-//    }
-//    // 5. 중복 리뷰 확인
-//    if (reviewRepository.existsByOrderId(orderId)) {
-//        throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
-//    }
-// }
+//    추후 통일된 에러로 변경 임시로 Illegal->Custom 작성
+  private Order validateOrder(UUID orderId, Long userId) {
+    // 1. 주문 존재 확인
+    Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new IllegalArgumentException("주문없음"));//new CustomException(ErrorCode.NOT_EXISTED_ORDER));
+    // 2. 본인 주문 확인
+       if (!Objects.equals(order.getUser().getUserId(), userId)) {
+          throw new IllegalArgumentException("본인 주문이 아님");
+      }
+    // 3. 주문 완료 상태 확인
+    if (order.getOrderStatus() != OrderStatus.COMPLETED) {
+        //throw new CustomException(ErrorCode.ORDER_NOT_COMPLETE);
+        throw new IllegalArgumentException("주문이 완료 상태가 아님");
+    }
+    // 4. 3일 이내 확인
+    if (order.getCreatedAt().plusDays(3).isBefore(LocalDateTime.now())) {
+        //throw new CustomException(ErrorCode.VALIDATION_FAILED);
+        throw new IllegalArgumentException("현재 시간이 주문 생성으로부터 3일 이내가 아님");
+    }
+    // 5. 중복 리뷰 확인
+    if (reviewRepository.existsByOrderOrderId(orderId)) {
+        //throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
+        throw new IllegalArgumentException("이미 해당 orderId로 리뷰가 존재함");
+    }
+      return order;
+ }
 
 
 
