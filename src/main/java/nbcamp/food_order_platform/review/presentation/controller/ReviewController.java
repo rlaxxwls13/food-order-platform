@@ -2,6 +2,7 @@ package nbcamp.food_order_platform.review.presentation.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import nbcamp.food_order_platform.global.security.AuthUser;
 import nbcamp.food_order_platform.review.application.dto.*;
 import nbcamp.food_order_platform.review.application.service.ReviewService;
 import nbcamp.food_order_platform.review.presentation.dto.request.PatchReviewReqDto;
@@ -13,6 +14,7 @@ import nbcamp.food_order_platform.review.application.dto.UpdateReviewResult;
 import nbcamp.food_order_platform.review.application.dto.CreateReviewResult;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,15 +30,11 @@ public class ReviewController {
      */
     @PostMapping("/reviews")
     public ResponseEntity<CreateReviewResult> createReview(
-            @Valid @RequestBody PostReviewReqDto reqDto
-            // @AuthenticationPrincipal UserDetailsImpl userDetails // 나중에 시큐리티 붙으면 쓸 것!
+            @Valid @RequestBody PostReviewReqDto reqDto,
+            @AuthenticationPrincipal AuthUser authUser
     ) {
-        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
-        Long currentUserId = 1L;
 
-        /*  시큐리티 적용 시 아래 주석 해제 예정
-        Long currentUserId = userDetails.getUser().getId()
-        */
+        Long currentUserId = authUser.getUserId();
 
         // 1. 받은 reqDto와 시스템이 아는 userId를 합쳐서
         // 2. Service 로 보낼 CreateReviewDto 생성
@@ -50,15 +48,10 @@ public class ReviewController {
     @PatchMapping("/reviews/{reviewId}")
     public ResponseEntity<UpdateReviewResult> updateReview(
             @PathVariable UUID reviewId,
-            //@AuthenticationPrincipal UserDetailsImpl userDetails,
+            @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody PatchReviewReqDto reqDto) {
 
-        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
-        Long currentUserId = 1L;
-
-        /*  시큐리티 적용 시 아래 주석 해제 예정
-        Long currentUserId = userDetails.getUser().getId()
-        */
+        Long currentUserId = authUser.getUserId();
 
         // 1. 받은 reqDto와 시스템이 아는 userId를 합쳐서
         // 2. Service 로 보낼 UpdateReviewDto 생성
@@ -72,15 +65,11 @@ public class ReviewController {
     @PatchMapping("/admin/reviews/{reviewId}/status")
     public ResponseEntity<UpdateReviewResult> changeReviewStatus(
             @PathVariable UUID reviewId,
-            //@AuthenticationPrincipal UserDetailsImpl userDetails,
+            @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody PatchReviewStatusReqDto dto) {
 
-        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
-        Long managerUserId = null; // 이상태로 하면 NPE터짐!
+        Long managerUserId = authUser.getUserId();
 
-        /*  시큐리티 적용 시 아래 주석 해제 예정
-        Long managerUser = userDetails.getUser().getUserId();
-        */
         UpdateReviewStatusCommand serviceDto = UpdateReviewStatusCommand.of(reviewId,managerUserId,dto.getStatus());
         return ResponseEntity.ok(reviewService.changeReviewStatus(serviceDto));
     }
@@ -89,15 +78,12 @@ public class ReviewController {
      */
     @DeleteMapping("/reviews/{reviewId}")
     public ResponseEntity<Void> deleteReview(
-            @PathVariable UUID reviewId
-            //,@AuthenticationPrincipal UserDetailsImpl userDetails
+            @PathVariable UUID reviewId,
+            @AuthenticationPrincipal AuthUser authUser
             ) {
-        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
-        Long currentUserId = 1L;
 
-        /*  시큐리티 적용 시 아래 주석 해제 예정
-        Long currentUserId = userDetails.getUser().getId();
-        */
+        Long currentUserId = authUser.getUserId();
+
         DeleteReviewCommand serviceDto = DeleteReviewCommand.of(reviewId, currentUserId);
         reviewService.deleteReview(serviceDto);
 
@@ -117,16 +103,12 @@ public class ReviewController {
      */
     @GetMapping("/admin/reviews/stores/{storeId}")
     public ResponseEntity<List<GetReviewManagerResult>> getStoreReviewsForManager(
-            @PathVariable UUID storeId
-            //,@AuthenticationPrincipal UserDetailsImpl userDetails
+            @PathVariable UUID storeId,
+            @AuthenticationPrincipal AuthUser authUser
             ) {
 
-        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
-        Long managerUserId = 1L; // 이상태로 하면 NPE터짐!
+        Long managerUserId = authUser.getUserId();
 
-        /*  시큐리티 적용 시 아래 주석 해제 예정
-        Long managerUserId = userDetails.getUser().userId;
-        */
         GetReviewManagerQuery serviceDto = GetReviewManagerQuery.forManager(storeId,managerUserId);
         return ResponseEntity.ok(reviewService.getReviewsByStoreForManager(serviceDto));
     }
