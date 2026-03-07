@@ -4,15 +4,15 @@ import jakarta.persistence.*;
 import lombok.*;
 import nbcamp.food_order_platform.global.common.BaseEntity;
 import nbcamp.food_order_platform.product.domain.entity.Product;
-import nbcamp.food_order_platform.store.domain.entity.Store;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity(name = "p_order_item")
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Getter
 public class OrderItem extends BaseEntity {
 
@@ -27,8 +27,7 @@ public class OrderItem extends BaseEntity {
     @JoinColumn(name = "order_id")
     private Order order;
 
-    // 상품 머지후 교체
-    //상품 ID
+    // 상품 ID
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
     private Product product;
@@ -46,14 +45,31 @@ public class OrderItem extends BaseEntity {
     @Column(nullable = false)
     private OrderItemStatus orderItemStatus;
 
+    @Builder.Default
     @Column(nullable = true)
     private Long canceledQuantity = 0L;
 
     @Column(nullable = true)
     private String reason;
 
+    // 연관관계 편의 메서드
+    public void assignOrder(Order order) {
+        this.order = order;
+    }
 
-    //부분 취소 처리
+    // 주문 상품 생성 팩토리 메서드
+    public static OrderItem create(Product product, Long quantity) {
+        return OrderItem.builder()
+                .product(product)
+                .productName(product.getName())
+                .quantity(quantity)
+                .price((long) product.getPrice())
+                .orderItemStatus(OrderItemStatus.NORMAL)
+                .canceledQuantity(0L)
+                .build();
+    }
+
+    // 부분 취소 처리
     public void partialCanceled(Long count) {
         if (this.quantity < count) {
             throw new IllegalArgumentException("취소 요청 수량이 현재 수량보다 많습니다.");
@@ -68,7 +84,7 @@ public class OrderItem extends BaseEntity {
         }
     }
 
-    //현재 수량에 따른 금액
+    // 현재 수량에 따른 금액
     public Long calculateCurrentAmount() {
         return this.price * this.quantity;
     }

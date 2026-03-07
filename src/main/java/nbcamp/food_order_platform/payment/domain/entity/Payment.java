@@ -49,34 +49,43 @@ public class Payment extends BaseEntity {
         return payment;
     }
 
-    // 결제 시도 (READY)
-    public void ready() {
-        this.paymentStatus = PaymentStatus.READY;
-    }
-
-    // 결제 완료 (COMPLETED)
-    public void complete() {
-        this.paymentStatus = PaymentStatus.COMPLETED;
-    }
-
-    // 결제 실패 (FAILED)
-    public void fail() {
-        this.paymentStatus = PaymentStatus.FAILED;
-    }
-
     // 주문 금액과 결제 정보 동기화
     public void syncAmount(Long newOrderTotal) {
         long difference = this.totalAmount - newOrderTotal;
-
         if (difference > 0) {
             this.canceledAmount += difference;
             this.totalAmount = newOrderTotal;
         }
     }
 
-    // 결제 전체 취소
+    // 결제 완료 처리
+    public void complete() {
+        if (this.paymentStatus != PaymentStatus.READY) {
+            throw new IllegalStateException("결제 완료 처리는 READY 상태에서만 가능합니다.");
+        }
+        this.paymentStatus = PaymentStatus.COMPLETED;
+    }
+
+    // 결제 실패 처리 (기타 사유)
+    public void fail() {
+        if (this.paymentStatus != PaymentStatus.READY) {
+            throw new IllegalStateException("결제 실패 처리는 READY 상태에서만 가능합니다.");
+        }
+        this.paymentStatus = PaymentStatus.FAILED;
+    }
+
+    // 결제 강제 취소 (전액 환불)
     public void cancel() {
         this.canceledAmount = this.totalAmount;
         this.paymentStatus = PaymentStatus.CANCELLED;
+    }
+
+    // 15분 경과 여부 확인 후 자동 실패 처리 로직
+    public void failIfTimeout() {
+        if (this.paymentStatus == PaymentStatus.READY && this.getCreatedAt() != null) {
+            if (this.getCreatedAt().plusMinutes(15).isBefore(LocalDateTime.now())) {
+                this.paymentStatus = PaymentStatus.FAILED;
+            }
+        }
     }
 }

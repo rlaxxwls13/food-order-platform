@@ -45,15 +45,15 @@ public class ReviewService {
         // 해서 통과된 order만 받아서 리뷰 작성 가능.
         Order order = validateOrder(dto.getOrderId(), dto.getUserId());
 
-        Store store = storeRepository.findById(order.getStore())
+        Store store = storeRepository.findById(order.getStore().getId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가게입니다."));
 
         // 검증 통과시 리뷰 작성 가능
         Review review = Review.builder()
-                .order(order)                   // 조회한 Order 객체 넣기
-                .store(store)                   // 조회한 Store 객체 넣기, 추후 .store(order.getStore())
-                .user(user)                      // 조회한 User 객체 넣기
-                .nickname(user.getNickname())     // User에서 꺼냄
+                .order(order) // 조회한 Order 객체 넣기
+                .store(store) // 조회한 Store 객체 넣기, 추후 .store(order.getStore())
+                .user(user) // 조회한 User 객체 넣기
+                .nickname(user.getNickname()) // User에서 꺼냄
                 .rating(dto.getRating())
                 .content(dto.getContent())
                 .build();
@@ -144,35 +144,33 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
-
-//  리뷰 작성시 검증 로직 메서드
-//    추후 통일된 에러로 변경 임시로 Illegal->Custom 작성
-  private Order validateOrder(UUID orderId, Long userId) {
-    // 1. 주문 존재 확인
-    Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new IllegalArgumentException("주문없음"));//new CustomException(ErrorCode.NOT_EXISTED_ORDER));
-    // 2. 본인 주문 확인
-       if (!Objects.equals(order.getUser().getUserId(), userId)) {
-          throw new IllegalArgumentException("본인 주문이 아님");
-      }
-    // 3. 주문 완료 상태 확인
-    if (order.getOrderStatus() != OrderStatus.COMPLETED) {
-        //throw new CustomException(ErrorCode.ORDER_NOT_COMPLETE);
-        throw new IllegalArgumentException("주문이 완료 상태가 아님");
+    // 리뷰 작성시 검증 로직 메서드
+    // 추후 통일된 에러로 변경 임시로 Illegal->Custom 작성
+    private Order validateOrder(UUID orderId, Long userId) {
+        // 1. 주문 존재 확인
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문없음"));// new
+                                                                         // CustomException(ErrorCode.NOT_EXISTED_ORDER));
+        // 2. 본인 주문 확인
+        if (!Objects.equals(order.getUser().getUserId(), userId)) {
+            throw new IllegalArgumentException("본인 주문이 아님");
+        }
+        // 3. 주문 완료 상태 확인
+        if (order.getOrderStatus() != OrderStatus.COMPLETED) {
+            // throw new CustomException(ErrorCode.ORDER_NOT_COMPLETE);
+            throw new IllegalArgumentException("주문이 완료 상태가 아님");
+        }
+        // 4. 3일 이내 확인
+        if (order.getCreatedAt().plusDays(3).isBefore(LocalDateTime.now())) {
+            // throw new CustomException(ErrorCode.VALIDATION_FAILED);
+            throw new IllegalArgumentException("현재 시간이 주문 생성으로부터 3일 이내가 아님");
+        }
+        // 5. 중복 리뷰 확인
+        if (reviewRepository.existsByOrderOrderId(orderId)) {
+            // throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
+            throw new IllegalArgumentException("이미 해당 orderId로 리뷰가 존재함");
+        }
+        return order;
     }
-    // 4. 3일 이내 확인
-    if (order.getCreatedAt().plusDays(3).isBefore(LocalDateTime.now())) {
-        //throw new CustomException(ErrorCode.VALIDATION_FAILED);
-        throw new IllegalArgumentException("현재 시간이 주문 생성으로부터 3일 이내가 아님");
-    }
-    // 5. 중복 리뷰 확인
-    if (reviewRepository.existsByOrderOrderId(orderId)) {
-        //throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
-        throw new IllegalArgumentException("이미 해당 orderId로 리뷰가 존재함");
-    }
-      return order;
- }
-
-
 
 }
