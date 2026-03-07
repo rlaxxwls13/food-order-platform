@@ -1,6 +1,8 @@
 package nbcamp.food_order_platform.product.domain.repository;
 
 import nbcamp.food_order_platform.product.domain.entity.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,4 +31,56 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     @Query(value = "select * from p_product where store_id = :storeId and deleted_at is not null", nativeQuery = true)
     List<Product> findAllDeletedByStoreId(@Param("storeId")UUID storeId);
 
+    @Query(value = "select * from p_product where product_id = :productId", nativeQuery = true)
+    Optional<Product> findByIdIncludingDeleted(@Param("productId") UUID productId);
+
+    @Query("""
+            select p
+            from Product p
+            where (:storeId is null or p.storeId = :storeId)
+              and (:keyword is null or :keyword = '' or lower(p.name) like lower(concat('%', :keyword, '%')))
+            """)
+    Page<Product> searchProducts(
+            @Param("storeId") UUID storeId,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
+
+    @Query("""
+            select p
+            from Product p
+            where (:storeId is null or p.storeId = :storeId)
+              and (:keyword is null or :keyword = '' or lower(p.name) like lower(concat('%', :keyword, '%')))
+              and (:includeHidden = true or p.isHidden = false)
+            """)
+    Page<Product> searchAdminProducts(
+            @Param("storeId") UUID storeId,
+            @Param("keyword") String keyword,
+            @Param("includeHidden") boolean includeHidden,
+            Pageable pageable
+    );
+
+    @Query(
+            value = """
+                    select *
+                    from p_product p
+                    where (:storeId is null or p.store_id = :storeId)
+                      and (:keyword is null or :keyword = '' or lower(p.name) like lower(concat('%', :keyword, '%')))
+                      and (:includeHidden = true or p.is_hidden = false)
+                    """,
+            countQuery = """
+                    select count(*)
+                    from p_product p
+                    where (:storeId is null or p.store_id = :storeId)
+                      and (:keyword is null or :keyword = '' or lower(p.name) like lower(concat('%', :keyword, '%')))
+                      and (:includeHidden = true or p.is_hidden = false)
+                    """,
+            nativeQuery = true
+    )
+    Page<Product> searchAdminProductsIncludingDeleted(
+            @Param("storeId") UUID storeId,
+            @Param("keyword") String keyword,
+            @Param("includeHidden") boolean includeHidden,
+            Pageable pageable
+    );
 }
