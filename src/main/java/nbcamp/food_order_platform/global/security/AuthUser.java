@@ -18,7 +18,7 @@ public class AuthUser implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities(){
-        return List.of(() -> role);
+        return List.of(() -> "ROLE_" + role);
     }
 
     @Override
