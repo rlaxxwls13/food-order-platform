@@ -1,5 +1,8 @@
 package nbcamp.food_order_platform.auth.application.service;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.auth.application.dto.LoginAuthCommand;
 import nbcamp.food_order_platform.auth.application.dto.LoginAuthResult;
@@ -29,6 +32,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
+    @Transactional
     public LoginAuthResult login(LoginAuthCommand loginAuthCommand){
         User user = getUserByUsername(loginAuthCommand.username());
 
@@ -75,7 +79,14 @@ public class AuthService {
 
         String refreshToken = reissueCommand.refreshToken();
 
-        if(!jwtUtil.validateToken(refreshToken)){
+        Claims refreshClaims;
+
+        try {
+            refreshClaims = jwtUtil.parseToken(refreshToken);
+        } catch (ExpiredJwtException e) {
+            throw new BusinessException(ErrorCode.AUTHORIZATION);
+            //EXPIRED_TOKEN ErrorCode 추가
+        } catch (JwtException | IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
 
@@ -87,10 +98,16 @@ public class AuthService {
             //ErrorCode.EXPIRED_TOKEN 추가
         }
 
+        String type = refreshClaims.get("type", String.class);
+
+        if (!"refresh".equals(type)) {
+            throw new BusinessException(ErrorCode.INVALID_TOKEN);
+        }
+
         Long userId = token.getUserId();
 
-        String username = jwtUtil.extractUsername(refreshToken);
-        Role role = Role.valueOf(jwtUtil.extractRole(refreshToken));
+        String username = refreshClaims.getSubject();
+        Role role = Role.valueOf(refreshClaims.get("role", String.class));
 
         String newAccessToken = jwtUtil.generateAccessToken(username,userId, role);
 
