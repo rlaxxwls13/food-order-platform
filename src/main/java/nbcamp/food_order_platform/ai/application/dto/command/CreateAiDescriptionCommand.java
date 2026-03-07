@@ -10,5 +10,6 @@ import java.util.UUID;
 public class CreateAiDescriptionCommand {
     private UUID productId;
     private String requestText;
+    private String responseText;
 }
 
