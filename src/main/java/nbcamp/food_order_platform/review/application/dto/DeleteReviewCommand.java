@@ -11,11 +11,13 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CreateReviewDto { // 리뷰 작성, service에서 사용
+public class DeleteReviewCommand {
 
-    private UUID orderId;
+    private UUID reviewId;
     private Long userId;
-    private int rating;
-    private String content;
 
+
+    public static DeleteReviewCommand of(UUID reviewId, Long userId) {
+        return new DeleteReviewCommand(reviewId, userId);
+    }
 }
