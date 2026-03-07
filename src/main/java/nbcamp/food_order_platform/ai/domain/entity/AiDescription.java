@@ -27,4 +27,11 @@ public class AiDescription extends BaseEntity {
 
     @Column(name = "response_text", nullable = false, length = 50)
     private String responseText;
+
+    public AiDescription(UUID productId, String requestText, String responseText) {
+        this.productId = productId;
+        this.requestText = requestText;
+        this.responseText = responseText;
+
+    }
 }
