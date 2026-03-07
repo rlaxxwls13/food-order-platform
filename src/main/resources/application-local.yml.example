@@ -9,7 +9,8 @@ spring:
     hibernate:
       ddl-auto: update
 
-
 ai:
-  openai:
+  gemini:
     api-key : ${API-KEY}
+    base-url: https://generativelanguage.googleapis.com/v1beta/models
+    model: gemini-2.5-flash-lite
