@@ -2,6 +2,8 @@ package nbcamp.food_order_platform.review.presentation.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nbcamp.food_order_platform.review.application.dto.*;
+import nbcamp.food_order_platform.global.security.JwtUtil;
+import nbcamp.food_order_platform.review.application.dto.CreateReviewDto;
 import nbcamp.food_order_platform.review.application.service.ReviewService;
 import nbcamp.food_order_platform.review.domain.entity.ReviewStatus;
 import nbcamp.food_order_platform.review.presentation.dto.request.PatchReviewReqDto;
@@ -42,6 +44,9 @@ class ReviewControllerTest {
 
     @MockitoBean
     private ReviewService reviewService;
+
+    @MockitoBean
+    private JwtUtil jwtUtil;
 
     @Test
     @DisplayName("1. 리뷰 작성 성공 테스트")
