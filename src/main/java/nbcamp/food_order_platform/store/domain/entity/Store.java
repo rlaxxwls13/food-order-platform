@@ -62,16 +62,6 @@ public class Store extends BaseEntity {
         this.reviewCount = 0;
     }
 
-    public void softDelete(Long userId) {
-        if (storeRegion != null) {
-            storeRegion.softDelete(userId);
-        }
-        for (StoreCategory sc : storeCategories) {
-            sc.softDelete(userId);
-        }
-        super.softDelete(userId);
-    }
-
     private static void validate(Long ownerId, RegionCode regionCode, String addressDetail, String name) {
         if(ownerId == null || regionCode == null || name == null || name.isBlank() || addressDetail == null || addressDetail.isBlank())
             throw new IllegalArgumentException("ownerId, regionCode, addressDetail, name은 필수입니다.");
