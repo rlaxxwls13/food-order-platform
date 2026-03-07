@@ -17,15 +17,4 @@ public class UpdateProductResult {
     private String description;
     private boolean isHidden;
     private LocalDateTime updatedAt;
-
-    public UpdateProductResult(UpdateProductResult result) {
-        this.productId = result.productId;
-        this.storeId = result.storeId;
-        this.name = result.name;
-        this.price = result.price;
-        this.stockQuantity = result.stockQuantity;
-        this.description = result.description;
-        this.isHidden = result.isHidden;
-        this.updatedAt = result.updatedAt;
-    }
 }
