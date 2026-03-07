@@ -25,6 +25,9 @@ public enum ErrorCode {
     NOT_EXISTED_ORDER(HttpStatus.NOT_FOUND, 4044, "This order does not exist."), //주문없음
     NOT_EXISTED_REVIEW(HttpStatus.NOT_FOUND, 4045, "Review not found."), //리뷰없음
     NOT_EXISTED_AI_LOG(HttpStatus.NOT_FOUND, 4046, "AI Description log not found."), //ai로 생성한설명 없음
+    NOT_EXISTED_STORE_REGION(HttpStatus.NOT_FOUND, 4047, "This store region does not exist"), //가게 지역 없음
+    NOT_EXISTED_STORE_CATEGORY(HttpStatus.NOT_FOUND, 4048, "This store category does not exist"), //가게 카테고리 없음
+
 
     //409
     DUPLICATED_USER_ID(HttpStatus.CONFLICT, 4091, "User ID already exists."), //유저ID 중복
