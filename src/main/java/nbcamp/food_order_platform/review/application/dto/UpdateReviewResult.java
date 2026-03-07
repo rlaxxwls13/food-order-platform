@@ -1,4 +1,4 @@
-package nbcamp.food_order_platform.review.presentation.dto.response;
+package nbcamp.food_order_platform.review.application.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,22 +12,26 @@ import java.util.UUID;
 @Getter
 @Builder
 @AllArgsConstructor
-public class GetReviewManagerResDto {
+public class UpdateReviewResult {
+
     private UUID reviewId;
+    private UUID storeId;
     private String nickname;
     private int rating;
     private String content;
-    private LocalDateTime createdAt;
     private ReviewStatus status;
+    private LocalDateTime updatedAt;
 
-    public static GetReviewManagerResDto from(Review review) {
-        return GetReviewManagerResDto.builder()
+    public static UpdateReviewResult from(Review review) {
+        return UpdateReviewResult.builder()
                 .reviewId(review.getReviewId())
+                .storeId(review.getStore().getId())
                 .nickname(review.getNickname())
                 .rating(review.getRating())
                 .content(review.getContent())
-                .createdAt(review.getCreatedAt())
                 .status(review.getStatus())
+                .updatedAt(review.getUpdatedAt())
                 .build();
     }
 }
+

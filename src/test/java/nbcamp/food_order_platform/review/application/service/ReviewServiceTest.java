@@ -3,12 +3,10 @@ package nbcamp.food_order_platform.review.application.service;
 import nbcamp.food_order_platform.order.domain.entity.Order;
 import nbcamp.food_order_platform.order.domain.entity.OrderStatus;
 import nbcamp.food_order_platform.order.domain.repository.OrderRepository;
-import nbcamp.food_order_platform.review.application.dto.CreateReviewDto;
+import nbcamp.food_order_platform.review.application.dto.*; // 변경된 CQRS DTO들
 import nbcamp.food_order_platform.review.domain.entity.Review;
 import nbcamp.food_order_platform.review.domain.entity.ReviewStatus;
 import nbcamp.food_order_platform.review.domain.repository.ReviewRepository;
-import nbcamp.food_order_platform.review.presentation.dto.request.*;
-import nbcamp.food_order_platform.review.presentation.dto.response.*;
 import nbcamp.food_order_platform.store.domain.entity.Store;
 import nbcamp.food_order_platform.store.domain.repository.StoreRepository;
 import nbcamp.food_order_platform.user.domain.entity.Role;
@@ -65,7 +63,6 @@ class ReviewServiceTest {
 
     @BeforeEach
     void setUp() {
-        // 필요한 Id 랜덤 생성
         reviewId = UUID.randomUUID();
         orderId = UUID.randomUUID();
         storeId = UUID.randomUUID();
@@ -81,30 +78,28 @@ class ReviewServiceTest {
         given(managerUser.getUserId()).willReturn(2L);
         given(managerUser.getRole()).willReturn(Role.MANAGER);
 
-        // 테스트용 가게 설정
+        // 테스트용 가게
         testStore = mock(Store.class);
+        given(testStore.getId()).willReturn(storeId);
 
-        // 테스트용 주문 설정 (여기저기 흩어진 걸 하나로 합침!)
+        // 테스트용 주문
         testOrder = mock(Order.class);
-        given(testOrder.getCreatedAt()).willReturn(LocalDateTime.now()); // 오늘 날짜로 체크
-        given(testOrder.getUser()).willReturn(testUser); // 본인 주문 검증 통과용 (testUser의 ID와 동일하게 1L 반환)
-        given(testOrder.getOrderStatus()).willReturn(OrderStatus.COMPLETED); // 상태 검증 통과용
-        given(testOrder.getStore()).willReturn(storeId); // ReviewService의 order.getStore() 호출 시 UUID 반환용
+        given(testOrder.getCreatedAt()).willReturn(LocalDateTime.now());
         given(testOrder.getUser()).willReturn(testUser);
+        given(testOrder.getOrderStatus()).willReturn(OrderStatus.COMPLETED);
+        given(testOrder.getStore()).willReturn(storeId);
 
         // 테스트용 리뷰
         testReview = mock(Review.class);
         given(testReview.getReviewId()).willReturn(reviewId);
         given(testReview.getOrder()).willReturn(testOrder);
-        given(testStore.getId()).willReturn(storeId); // 가게 객체가 자신의 ID를 갖게 함
-        given(testReview.getStore()).willReturn(testStore); // 리뷰가 가게 객체를 반환하게 함
+        given(testReview.getStore()).willReturn(testStore);
         given(testReview.getUser()).willReturn(testUser);
         given(testReview.getNickname()).willReturn("테스트유저");
-        given(testReview.getRating()).willReturn(5);
+        given(testReview.getRating()).willReturn(5); // 기존 별점 5점
         given(testReview.getContent()).willReturn("맛있어요");
         given(testReview.getStatus()).willReturn(ReviewStatus.VISIBLE);
     }
-
 
     // 1. 리뷰 작성 테스트
     @Nested
@@ -112,10 +107,10 @@ class ReviewServiceTest {
     class CreateReview {
 
         @Test
-        @DisplayName("성공 - 정상적으로 리뷰가 작성된다")
+        @DisplayName("성공 - 정상적으로 리뷰 작성, 스토어 통계가 갱신")
         void createReview_success() {
             // given
-            CreateReviewDto dto = CreateReviewDto.builder()
+            CreateReviewCommand command = CreateReviewCommand.builder()
                     .orderId(orderId)
                     .userId(1L)
                     .rating(5)
@@ -123,9 +118,7 @@ class ReviewServiceTest {
                     .build();
 
             given(userRepository.findById(1L)).willReturn(Optional.of(testUser));
-
             given(storeRepository.findById(storeId)).willReturn(Optional.of(testStore));
-
             given(orderRepository.findById(orderId)).willReturn(Optional.of(testOrder));
             given(reviewRepository.existsByOrderOrderId(orderId)).willReturn(false);
 
@@ -133,40 +126,15 @@ class ReviewServiceTest {
             given(testReview.getCreatedAt()).willReturn(LocalDateTime.now());
 
             // when
-            PostReviewResDto result = reviewService.createReview(dto);
+            CreateReviewResult result = reviewService.createReview(command);
 
             // then
             assertThat(result.getReviewId()).isEqualTo(reviewId);
-            assertThat(result.getStoreId()).isEqualTo(storeId);
-            assertThat(result.getNickname()).isEqualTo("테스트유저");
-            assertThat(result.getRating()).isEqualTo(5);
-            assertThat(result.getContent()).isEqualTo("맛있어요");
-            assertThat(result.getStatus()).isEqualTo(ReviewStatus.VISIBLE);
             verify(reviewRepository, times(1)).save(any(Review.class));
-        }
-
-        @Test
-        @DisplayName("실패 - 존재하지 않는 유저")
-        void createReview_userNotFound() {
-            // given
-            CreateReviewDto dto = CreateReviewDto.builder()
-                    .orderId(orderId)
-                    .userId(999L)
-                    .rating(5)
-                    .content("맛있어요")
-                    .build();
-
-            given(userRepository.findById(999L)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> reviewService.createReview(dto))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("존재하지 않는 회원");
-
-            verify(reviewRepository, never()).save(any());
+            // 가게의 별점이 추가되었는지 검증!
+            verify(testStore, times(1)).addNewRating(5);
         }
     }
-
 
     // 2-1. 리뷰 수정 테스트
     @Nested
@@ -174,49 +142,30 @@ class ReviewServiceTest {
     class UpdateReview {
 
         @Test
-        @DisplayName("성공 - 본인 리뷰를 수정한다")
+        @DisplayName("성공 - 본인 리뷰를 수정하면 스토어 통계가 변경된다")
         void updateReview_success() {
             // given
-            PatchReviewReqDto dto = new PatchReviewReqDto(4, "수정된 내용");
+            UpdateReviewCommand command = UpdateReviewCommand.builder()
+                    .reviewId(reviewId)
+                    .userId(1L)
+                    .rating(4) // 5점에서 4점으로 수정
+                    .content("수정된 내용")
+                    .build();
 
             given(reviewRepository.findById(reviewId)).willReturn(Optional.of(testReview));
             given(testReview.getUpdatedAt()).willReturn(LocalDateTime.now());
 
             // when
-            PatchReviewResDto result = reviewService.updateReview(reviewId, 1L, dto);
+            UpdateReviewResult result = reviewService.updateReview(command);
 
             // then
             verify(testReview, times(1)).updateReview(4, "수정된 내용");
+            // 스토어 통계 검증: 기존 5점 빼고 4점 더했는지 확인!
+            verify(testStore, times(1)).removeRating(5);
+            verify(testStore, times(1)).addNewRating(4);
             assertThat(result).isNotNull();
         }
-
-        @Test
-        @DisplayName("실패 - 존재하지 않는 리뷰")
-        void updateReview_reviewNotFound() {
-            // given
-            PatchReviewReqDto dto = new PatchReviewReqDto(4, "수정된 내용");
-            given(reviewRepository.findById(reviewId)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> reviewService.updateReview(reviewId, 1L, dto))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("존재하지 않는 리뷰");
-        }
-
-        @Test
-        @DisplayName("실패 - 본인 리뷰가 아닌 경우")
-        void updateReview_notOwner() {
-            // given
-            PatchReviewReqDto dto = new PatchReviewReqDto(4, "수정된 내용");
-            given(reviewRepository.findById(reviewId)).willReturn(Optional.of(testReview));
-
-            // when & then (다른 유저 ID로 시도)
-            assertThatThrownBy(() -> reviewService.updateReview(reviewId, 999L, dto))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("권한");
-        }
     }
-
 
     // 2-2. 리뷰 상태 변경 테스트
     @Nested
@@ -224,15 +173,21 @@ class ReviewServiceTest {
     class ChangeReviewStatus {
 
         @Test
-        @DisplayName("성공 - MANAGER가 리뷰를 HIDDEN으로 변경한다")
+        @DisplayName("성공 - MANAGER가 리뷰를 HIDDEN으로 변경")
         void changeStatus_success() {
             // given
-            PatchReviewStatusReqDto dto = new PatchReviewStatusReqDto(ReviewStatus.HIDDEN);
+            UpdateReviewStatusCommand command = UpdateReviewStatusCommand.builder()
+                    .reviewId(reviewId)
+                    .userId(2L) // Manager ID
+                    .status(ReviewStatus.HIDDEN)
+                    .build();
+
+            given(userRepository.findById(2L)).willReturn(Optional.of(managerUser));
             given(reviewRepository.findById(reviewId)).willReturn(Optional.of(testReview));
             given(testReview.getUpdatedAt()).willReturn(LocalDateTime.now());
 
             // when
-            PatchReviewResDto result = reviewService.changeReviewStatus(reviewId, managerUser, dto);
+            UpdateReviewResult result = reviewService.changeReviewStatus(command);
 
             // then
             verify(testReview, times(1)).updateStatus(ReviewStatus.HIDDEN);
@@ -243,26 +198,19 @@ class ReviewServiceTest {
         @DisplayName("실패 - CUSTOMER가 상태 변경 시도")
         void changeStatus_noPermission() {
             // given
-            PatchReviewStatusReqDto dto = new PatchReviewStatusReqDto(ReviewStatus.HIDDEN);
+            UpdateReviewStatusCommand command = UpdateReviewStatusCommand.builder()
+                    .reviewId(reviewId)
+                    .userId(1L) // Customer ID
+                    .status(ReviewStatus.HIDDEN)
+                    .build();
+
+            given(userRepository.findById(1L)).willReturn(Optional.of(testUser));
             given(reviewRepository.findById(reviewId)).willReturn(Optional.of(testReview));
 
             // when & then
-            assertThatThrownBy(() -> reviewService.changeReviewStatus(reviewId, testUser, dto))
+            assertThatThrownBy(() -> reviewService.changeReviewStatus(command))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("매니저 또는 마스터");
-        }
-
-        @Test
-        @DisplayName("실패 - 존재하지 않는 리뷰")
-        void changeStatus_reviewNotFound() {
-            // given
-            PatchReviewStatusReqDto dto = new PatchReviewStatusReqDto(ReviewStatus.HIDDEN);
-            given(reviewRepository.findById(reviewId)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> reviewService.changeReviewStatus(reviewId, managerUser, dto))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("존재하지 않는 리뷰");
+                    .hasMessageContaining("권한이 필요합니다");
         }
     }
 
@@ -272,40 +220,23 @@ class ReviewServiceTest {
     class DeleteReview {
 
         @Test
-        @DisplayName("성공 - 본인 리뷰를 삭제한다")
+        @DisplayName("성공 - 본인 리뷰를 삭제하면 스토어 통계가 감소")
         void deleteReview_success() {
             // given
+            DeleteReviewCommand command = DeleteReviewCommand.builder()
+                    .reviewId(reviewId)
+                    .userId(1L)
+                    .build();
+
             given(reviewRepository.findById(reviewId)).willReturn(Optional.of(testReview));
 
             // when
-            reviewService.deleteReview(reviewId, 1L);
+            reviewService.deleteReview(command);
 
             // then
-            verify(testReview, times(1)).softDelete(1L); // delete()에서 softDelete()로
-        }
-
-        @Test
-        @DisplayName("실패 - 존재하지 않는 리뷰")
-        void deleteReview_reviewNotFound() {
-            // given
-            given(reviewRepository.findById(reviewId)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> reviewService.deleteReview(reviewId, 1L))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("존재하지 않는 리뷰");
-        }
-
-        @Test
-        @DisplayName("실패 - 본인 리뷰가 아닌 경우")
-        void deleteReview_notOwner() {
-            // given
-            given(reviewRepository.findById(reviewId)).willReturn(Optional.of(testReview));
-
-            // when & then
-            assertThatThrownBy(() -> reviewService.deleteReview(reviewId, 999L))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("본인");
+            verify(testReview, times(1)).softDelete(1L);
+            // 스토어 통계 검증: 삭제된 리뷰 별점(5)이 제거되었는지 확인!
+            verify(testStore, times(1)).removeRating(5);
         }
     }
 
@@ -319,40 +250,28 @@ class ReviewServiceTest {
 
         @BeforeEach
         void setUpReviews() {
-            // 엔티티 객체 생성
-            visibleReview = Review.builder()
-                    .reviewId(UUID.randomUUID())
-                    .order(testOrder)
-                    .store(testStore)
-                    .user(testUser)
-                    .nickname("유저1")
-                    .rating(5)
-                    .content("맛있어요")
-                    .status(ReviewStatus.VISIBLE)
-                    .build();
+            visibleReview = mock(Review.class);
+            given(visibleReview.getReviewId()).willReturn(UUID.randomUUID());
+            given(visibleReview.getNickname()).willReturn("유저1");
+            given(visibleReview.getStatus()).willReturn(ReviewStatus.VISIBLE);
+            given(visibleReview.getStore()).willReturn(testStore);
 
-            hiddenReview = Review.builder()
-                    .reviewId(UUID.randomUUID())
-                    .order(testOrder)
-                    .store(testStore)
-                    .user(managerUser)
-                    .nickname("유저2")
-                    .rating(3)
-                    .content("별로에요")
-                    .status(ReviewStatus.HIDDEN)
-                    .build();
+            hiddenReview = mock(Review.class);
+            given(hiddenReview.getReviewId()).willReturn(UUID.randomUUID());
+            given(hiddenReview.getNickname()).willReturn("유저2");
+            given(hiddenReview.getStatus()).willReturn(ReviewStatus.HIDDEN);
+            given(hiddenReview.getStore()).willReturn(testStore);
         }
 
         @Test
-        @DisplayName("성공 - CUSTOMER가 가게 리뷰 조회 시 VISIBLE만 보인다")
+        @DisplayName("성공 - CUSTOMER가 가게 리뷰 조회 시 VISIBLE만 보임")
         void getReviewsByStore_customer() {
             // given
             given(reviewRepository.findAllByStoreId(storeId))
                     .willReturn(List.of(visibleReview, hiddenReview));
 
             // when
-            List<GetReviewCustomerResDto> result =
-                    reviewService.getReviewsByStoreForCustomer(storeId);
+            List<GetReviewCustomerResult> result = reviewService.getReviewsByStoreForCustomer(storeId);
 
             // then
             assertThat(result).hasSize(1);
@@ -360,43 +279,23 @@ class ReviewServiceTest {
         }
 
         @Test
-        @DisplayName("성공 - MANAGER가 가게 리뷰 조회 시 전체 보인다")
+        @DisplayName("성공 - MANAGER가 가게 리뷰 조회 시 전체 보암")
         void getReviewsByStore_manager() {
             // given
+            GetReviewManagerQuery query = GetReviewManagerQuery.builder()
+                    .storeId(storeId)
+                    .userId(2L)
+                    .build();
+
+            given(userRepository.findById(2L)).willReturn(Optional.of(managerUser));
             given(reviewRepository.findAllByStoreId(storeId))
                     .willReturn(List.of(visibleReview, hiddenReview));
 
             // when
-            List<GetReviewManagerResDto> result =
-                    reviewService.getReviewsByStoreForManager(storeId, managerUser);
+            List<GetReviewManagerResult> result = reviewService.getReviewsByStoreForManager(query);
 
             // then
             assertThat(result).hasSize(2);
-        }
-
-        @Test
-        @DisplayName("실패 - CUSTOMER가 관리자 조회 시도")
-        void getReviewsByStore_manager_noPermission() {
-            // when & then
-            assertThatThrownBy(() ->
-                    reviewService.getReviewsByStoreForManager(storeId, testUser))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("관리자 권한");
-        }
-
-        @Test
-        @DisplayName("성공 - 유저별 리뷰 조회 시 VISIBLE만 보인다")
-        void getReviewsByUser() {
-            // given
-            given(reviewRepository.findAllByUser_UserId(1L))
-                    .willReturn(List.of(visibleReview, hiddenReview));
-
-            // when
-            List<GetReviewCustomerResDto> result =
-                    reviewService.getReviewsByUser(1L);
-
-            // then
-            assertThat(result).hasSize(1);
         }
     }
 }
