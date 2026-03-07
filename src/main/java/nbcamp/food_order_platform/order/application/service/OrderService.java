@@ -28,6 +28,30 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+/**
+ * 주문(Order) 도메인의 비즈니스 로직을 처리하는 서비스 클래스.
+ *
+ * <p>
+ * 주요 기능:
+ * </p>
+ * <ul>
+ * <li>주문 생성 (createOrder)</li>
+ * <li>고객용 주문 단건 조회 (getOrderForCustomer)</li>
+ * <li>관리자용 주문 단건 조회 (getOrderForAdmin)</li>
+ * <li>고객용 주문 목록 조회 (getOrdersForCustomer)</li>
+ * <li>관리자용 주문 목록 조회 (getOrdersForAdmin)</li>
+ * <li>주문 전체 취소 (cancelOrder)</li>
+ * <li>주문 상품 부분 취소 (cancelOrderItems)</li>
+ * </ul>
+ *
+ * <p>
+ * 모든 요청은 JWT 인증을 통해 전달된 사용자 정보(AuthUser)를 기반으로 처리됩니다.
+ * </p>
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
