@@ -87,7 +87,7 @@ class ReviewServiceTest {
         given(testOrder.getCreatedAt()).willReturn(LocalDateTime.now());
         given(testOrder.getUser()).willReturn(testUser);
         given(testOrder.getOrderStatus()).willReturn(OrderStatus.COMPLETED);
-        given(testOrder.getStore()).willReturn(storeId);
+        given(testOrder.getStore()).willReturn(testStore);
 
         // 테스트용 리뷰
         testReview = mock(Review.class);
