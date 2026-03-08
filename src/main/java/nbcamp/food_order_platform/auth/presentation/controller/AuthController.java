@@ -11,6 +11,10 @@ import nbcamp.food_order_platform.auth.presentation.dto.PostAuthReqDto;
 import nbcamp.food_order_platform.auth.presentation.dto.PostAuthResDto;
 import nbcamp.food_order_platform.auth.presentation.dto.PostReissueReqDto;
 import nbcamp.food_order_platform.auth.presentation.dto.PostReissueResDto;
+import nbcamp.food_order_platform.global.error.ErrorCode;
+import nbcamp.food_order_platform.global.error.exception.BusinessException;
+import nbcamp.food_order_platform.global.security.AuthUser;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,4 +46,13 @@ public class AuthController {
         return new PostReissueResDto(reissueResult.accessToken());
     }
 
+    @PostMapping("/logout")
+    public void logout(@AuthenticationPrincipal AuthUser authUser){
+
+        if(authUser == null){
+            throw new BusinessException(ErrorCode.AUTHORIZATION);
+        }
+
+        authService.logout(authUser.getUserId());
+    }
 }

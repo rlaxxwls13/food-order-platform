@@ -6,12 +6,13 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Entity
+@Entity(name = "p_refresh")
 @Getter
 @NoArgsConstructor
 public class RefreshToken {
 
     @Id
+    @Column(name = "token_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long tokenId;
 
