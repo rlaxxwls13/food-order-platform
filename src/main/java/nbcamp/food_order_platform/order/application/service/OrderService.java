@@ -78,18 +78,7 @@ public class OrderService {
                 address.getRoadName(),
                 address.getDetailName());
 
-        List<OrderCreateCommand.OrderItemCommand> commandItems = request.items().stream()
-                .map(item -> new OrderCreateCommand.OrderItemCommand(item.productId(), item.quantity()))
-                .collect(Collectors.toList());
-
-        OrderCreateCommand mockCommand = new OrderCreateCommand(
-                request.storeId(),
-                request.comment(),
-                commandItems,
-                request.addressId(),
-                userId);
-
-        Order order = Order.createOrder(user, store, mockCommand);
+        Order order = Order.create(user, store);
         order.setSnapshotAddress(snapshotAddress);
 
         for (OrderCreateRequest.OrderItemRequest itemReq : request.items()) {

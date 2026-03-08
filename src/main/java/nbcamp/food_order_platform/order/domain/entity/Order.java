@@ -1,12 +1,9 @@
 package nbcamp.food_order_platform.order.domain.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import nbcamp.food_order_platform.global.common.BaseEntity;
-import nbcamp.food_order_platform.order.application.dto.command.OrderCreateCommand;
 import nbcamp.food_order_platform.payment.domain.entity.Payment;
 import nbcamp.food_order_platform.store.domain.entity.Store;
 import nbcamp.food_order_platform.user.domain.entity.User;
@@ -53,16 +50,16 @@ public class Order extends BaseEntity {
     @Column(nullable = false)
     private OrderStatus orderStatus;
 
-    // 주문 생성 팩토리 메서드
-    public static Order createOrder(User user, Store store, OrderCreateCommand command) {
-        Order order = new Order();
-        order.user = user;
-        order.store = store;
-        order.totalAmount = 0L; // 초기화 후 recalculate
-        order.orderStatus = OrderStatus.CREATED;
+    public Order(User user, Store store) {
+        this.user = user;
+        this.store = store;
+        this.totalAmount = 0L;
+        this.orderStatus = OrderStatus.CREATED;
+    }
 
-        // Address 정보 스냅샷
-        return order;
+    // 주문 생성 팩토리 메서드
+    public static Order create(User user, Store store) {
+        return new Order(user,store);
     }
 
     // 주소 스냅샷 설정
