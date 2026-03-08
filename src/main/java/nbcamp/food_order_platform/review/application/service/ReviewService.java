@@ -47,7 +47,7 @@ public class ReviewService {
         // 해서 통과된 order만 받아서 리뷰 작성 가능.
         Order order = validateOrder(dto.getOrderId(), dto.getUserId());
 
-        Store store = storeRepository.findById(order.getStore())
+        Store store = storeRepository.findById(order.getStore().getId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 가게입니다."));
 
         // 검증 통과시 리뷰 작성 가능
