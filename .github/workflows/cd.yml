@@ -2,7 +2,7 @@ name: CD
 
 on:
   push:
-    branches: ["chore/hajin/ci-setup"]
+    branches: ["main"]
 
 jobs:
   deploy:
@@ -55,7 +55,7 @@ jobs:
             EOF
             aws ecr get-login-password --region ${{secrets.AWS_REGION}} | docker login --username AWS --password-stdin ${{steps.login-ecr.outputs.registry}}
             cd ~/food-order-platform
-            git pull origin chore/hajin/ci-setup
+            git pull origin main
             docker-compose pull
             docker-compose down
             docker-compose up -d --remove-orphans

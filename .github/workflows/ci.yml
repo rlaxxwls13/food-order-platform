@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: ["chore/hajin/ci-setup"]
+    branches: ["develop"]
 
 permissions:
   checks: write
