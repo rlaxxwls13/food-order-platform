@@ -1,6 +1,5 @@
 package nbcamp.food_order_platform.product.application.service;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
@@ -11,10 +10,13 @@ import nbcamp.food_order_platform.product.application.dto.query.GetProductsPageQ
 import nbcamp.food_order_platform.product.application.dto.result.*;
 import nbcamp.food_order_platform.product.domain.entity.Product;
 import nbcamp.food_order_platform.product.domain.repository.ProductRepository;
-import nbcamp.food_order_platform.user.domain.repository.UserRepository;
+import nbcamp.food_order_platform.store.domain.entity.Store;
+import nbcamp.food_order_platform.store.domain.repository.StoreRepository;
+import nbcamp.food_order_platform.user.domain.entity.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -23,11 +25,11 @@ import java.util.UUID;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    private final UserRepository userRepository;
+    private final StoreRepository storeRepository;
 
     @Transactional
-    public CreateProductResult createProduct(CreateProductCommand productDto) {
-        //validateOwner(storeId, userId); 가게 주인 확인
+    public CreateProductResult createProduct(CreateProductCommand productDto, Long userId, Role role) {
+        validateStorePermission(productDto.getStoreId(), userId, role);
 
         /*
         useAi = true 설명 생성 요청
@@ -64,11 +66,11 @@ public class ProductService {
     }
 
     @Transactional
-    public UpdateProductResult updateProduct(UpdateProductCommand productDto) {
-        //validateOwner(productId, userId); 가게 주인 확인
-
+    public UpdateProductResult updateProduct(UpdateProductCommand productDto, Long userId, Role role) {
         Product product = productRepository.findById(productDto.getProductId())
                 .orElseThrow(()-> new BusinessException(ErrorCode.NOT_EXISTED_PRODUCT));
+
+        validateStorePermission(product.getStoreId(), userId, role);
 
         if(productDto.getName() != null) product.changeName(productDto.getName());
 
@@ -99,7 +101,7 @@ public class ProductService {
         );
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public GetProductResult getProduct(UUID productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_PRODUCT));
@@ -117,7 +119,7 @@ public class ProductService {
         );
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public GetProductsPageResult getProducts(GetProductsPageQuery query, Pageable pageable) {
         Page<Product> productPage = productRepository.searchProducts(
                 query.getStoreId(),
@@ -141,13 +143,11 @@ public class ProductService {
     }
 
     @Transactional
-    public UpdateProductHiddenResult updateProductHidden(Long userId, UUID productId, boolean hidden) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_USER));
-        // validateOwner(productId, userId); 가게 주인 확인
-
+    public UpdateProductHiddenResult updateProductHidden(UUID productId, boolean hidden, Long userId, Role role) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_PRODUCT));
+
+        validateStorePermission(product.getStoreId(), userId, role);
 
         if (hidden) {
             product.hide();
@@ -163,13 +163,11 @@ public class ProductService {
     }
 
     @Transactional
-    public DeleteProductResult deleteProduct(Long userId, UUID productId) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_USER));
-        // validateOwner(productId, userId); 가게 주인 확인
-
+    public DeleteProductResult deleteProduct(UUID productId, Long userId, Role role) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_PRODUCT));
+
+        validateStorePermission(product.getStoreId(), userId, role);
 
         product.softDelete(userId);
 
@@ -180,8 +178,10 @@ public class ProductService {
         );
     }
 
-    @Transactional
-    public GetAdminProductsPageResult getAdminProducts(GetAdminProductsPageQuery query, Pageable pageable) {
+    @Transactional(readOnly = true)
+    public GetAdminProductsPageResult getAdminProducts(GetAdminProductsPageQuery query, Pageable pageable, Long userId, Role role) {
+        validateStorePermission(query.getStoreId(), userId, role);
+
         // null 방지 (null => false)
         boolean includeHidden = Boolean.TRUE.equals(query.getIncludeHidden());
         boolean includeDeleted = Boolean.TRUE.equals(query.getIncludeDeleted());
@@ -220,10 +220,16 @@ public class ProductService {
         return GetAdminProductsPageResult.from(resultPage);
     }
 
-//    public void validateOwner(UUID storeId, Long userId){ //가게 주인 확인
-//        boolean isOwner =
-//        if (!isOwner) {
-//            throw new BusinessException(ErrorCode.NO_PERMISSION, "가게 권한이 없습니다.");
-//        }
-//    }
+    public void validateStorePermission(UUID storeId, Long userId, Role role){ //가게 주인 확인
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_STORE));
+
+        if (role == Role.MANAGER || role == Role.MASTER)
+            return;
+
+        if (role == Role.OWNER && store.getOwnerId().equals(userId))
+            return;
+
+        throw new BusinessException(ErrorCode.NO_PERMISSION, "가게 권한이 없습니다.");
+    }
 }
