@@ -2,7 +2,7 @@ package nbcamp.food_order_platform.review.presentation.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nbcamp.food_order_platform.global.security.JwtUtil;
-import nbcamp.food_order_platform.review.application.dto.CreateReviewDto;
+import nbcamp.food_order_platform.review.application.dto.*;
 import nbcamp.food_order_platform.review.application.service.ReviewService;
 import nbcamp.food_order_platform.review.presentation.dto.request.PostReviewReqDto;
 import nbcamp.food_order_platform.review.presentation.dto.response.GetReviewCustomerResDto;
