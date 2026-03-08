@@ -1,41 +1,33 @@
 package nbcamp.food_order_platform.ai.client.request;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
-import java.util.ArrayList;
 import java.util.List;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
 public class GeminiReqDto {
 
-    private List<Content> contents;
+    private final List<Content> contents;
 
-    @Data
-    public class Content{
+    public GeminiReqDto(String text) {
+        this.contents = List.of(new Content(text));
+    }
 
-        private List<Part> parts;
+    @Getter
+    static class Content {
+        private final List<Part> parts;
 
-        public Content(String text){
-            parts = new ArrayList<>();
-            Part part = new Part(text);
-            parts.add(part);
-        }
-
-        @Data
-        @NoArgsConstructor
-        @AllArgsConstructor
-        public class Part{
-            private String text;
+        Content(String text) {
+            this.parts = List.of(new Part(text));
         }
     }
 
-    public void createGeminiReqDto(String text){
-        this.contents = new ArrayList<>();
-        Content content = new Content(text);
-        contents.add(content);
+    @Getter
+    static class Part {
+        private final String text;
+
+        Part(String text) {
+            this.text = text;
+        }
     }
 }

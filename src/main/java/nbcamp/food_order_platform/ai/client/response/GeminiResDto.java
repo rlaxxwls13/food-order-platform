@@ -1,32 +1,43 @@
 package nbcamp.food_order_platform.ai.client.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 import java.util.List;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
 public class GeminiResDto {
+
     private List<Candidate> candidates;
 
-    @Data
+    @Getter
     public static class Candidate {
         private Content content;
         private String finishReason;
     }
 
-    @Data
+    @Getter
     public static class Content {
-        private List<Parts> parts;
+        private List<Part> parts;
         private String role;
-
     }
 
-    @Data
-    public static class Parts {
+    @Getter
+    public static class Part {
         private String text;
+    }
+
+    public String getGeneratedText() {
+        if (candidates == null || candidates.isEmpty()) {
+            return null;
+        }
+
+        Candidate candidate = candidates.get(0);
+        if (candidate.getContent() == null ||
+                candidate.getContent().getParts() == null ||
+                candidate.getContent().getParts().isEmpty()) {
+            return null;
+        }
+
+        return candidate.getContent().getParts().get(0).getText();
     }
 }
