@@ -1,3 +1,5 @@
+package nbcamp.food_order_platform.ai.application.service;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbcamp.food_order_platform.ai.client.request.GeminiReqDto;

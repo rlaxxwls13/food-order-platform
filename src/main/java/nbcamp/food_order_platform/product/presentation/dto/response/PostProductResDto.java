@@ -18,14 +18,14 @@ public class PostProductResDto {
     private LocalDateTime createdAt;
 
 
-    public PostProductResDto(CreateProductResult productDto) {
-        this.productId = productDto.getProductId();
-        this.storeId = productDto.getStoreId();
-        this.name = productDto.getName();
-        this.price = productDto.getPrice();
-        this.stockQuantity = productDto.getStockQuantity();
-        this.description = productDto.getDescription();
-        this.isHidden = productDto.isHidden();
-        this.createdAt = productDto.getCreatedAt();
+    public PostProductResDto(CreateProductResult result) {
+        this.productId = result.getProductId();
+        this.storeId = result.getStoreId();
+        this.name = result.getName();
+        this.price = result.getPrice();
+        this.stockQuantity = result.getStockQuantity();
+        this.description = result.getDescription();
+        this.isHidden = result.isHidden();
+        this.createdAt = result.getCreatedAt();
     }
 }
