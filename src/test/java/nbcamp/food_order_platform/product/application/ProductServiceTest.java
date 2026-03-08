@@ -5,19 +5,27 @@ import nbcamp.food_order_platform.global.error.exception.BusinessException;
 import nbcamp.food_order_platform.product.application.dto.command.UpdateProductCommand;
 import nbcamp.food_order_platform.product.application.dto.query.GetAdminProductsPageQuery;
 import nbcamp.food_order_platform.product.application.dto.query.GetProductsPageQuery;
-import nbcamp.food_order_platform.product.application.dto.result.*;
+import nbcamp.food_order_platform.product.application.dto.result.DeleteProductResult;
+import nbcamp.food_order_platform.product.application.dto.result.GetAdminProductsPageResult;
+import nbcamp.food_order_platform.product.application.dto.result.GetProductResult;
+import nbcamp.food_order_platform.product.application.dto.result.GetProductsPageResult;
+import nbcamp.food_order_platform.product.application.dto.result.UpdateProductHiddenResult;
+import nbcamp.food_order_platform.product.application.dto.result.UpdateProductResult;
 import nbcamp.food_order_platform.product.application.service.ProductService;
 import nbcamp.food_order_platform.product.domain.entity.Product;
 import nbcamp.food_order_platform.product.domain.repository.ProductRepository;
-import nbcamp.food_order_platform.user.domain.entity.User;
-import nbcamp.food_order_platform.user.domain.repository.UserRepository;
+import nbcamp.food_order_platform.store.domain.entity.Store;
+import nbcamp.food_order_platform.store.domain.repository.StoreRepository;
+import nbcamp.food_order_platform.user.domain.entity.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,7 +43,7 @@ class ProductServiceTest {
     private ProductRepository productRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private StoreRepository storeRepository;
 
     @InjectMocks
     private ProductService productService;
@@ -138,7 +146,9 @@ class ProductServiceTest {
     @Test
     void updateProduct_success() {
         // given
+        Long userId = 1L;
         UUID productId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
 
         UpdateProductCommand command = mock(UpdateProductCommand.class);
         when(command.getProductId()).thenReturn(productId);
@@ -150,10 +160,15 @@ class ProductServiceTest {
         when(command.getUseAi()).thenReturn(false);
 
         Product product = mock(Product.class);
+        Store store = mock(Store.class);
+
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        when(product.getStoreId()).thenReturn(storeId);
+
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(store.getOwnerId()).thenReturn(userId);
 
         when(product.getId()).thenReturn(productId);
-        when(product.getStoreId()).thenReturn(UUID.randomUUID());
         when(product.getName()).thenReturn("수정상품");
         when(product.getPrice()).thenReturn(3000);
         when(product.getQuantity()).thenReturn(20);
@@ -162,7 +177,7 @@ class ProductServiceTest {
         when(product.getUpdatedAt()).thenReturn(LocalDateTime.now());
 
         // when
-        UpdateProductResult result = productService.updateProduct(command);
+        UpdateProductResult result = productService.updateProduct(command, userId, Role.OWNER);
 
         // then
         verify(product).changeName("수정상품");
@@ -181,14 +196,16 @@ class ProductServiceTest {
     @Test
     void updateProduct_fails_when_product_not_found() {
         // given
+        Long userId = 1L;
         UUID productId = UUID.randomUUID();
+
         UpdateProductCommand command = mock(UpdateProductCommand.class);
         when(command.getProductId()).thenReturn(productId);
 
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
         // when / then
-        assertThatThrownBy(() -> productService.updateProduct(command))
+        assertThatThrownBy(() -> productService.updateProduct(command, userId, Role.OWNER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(ex -> {
                     BusinessException be = (BusinessException) ex;
@@ -202,17 +219,23 @@ class ProductServiceTest {
         // given
         Long userId = 1L;
         UUID productId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+
         Product product = mock(Product.class);
-        User user = mock(User.class);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        Store store = mock(Store.class);
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        when(product.getStoreId()).thenReturn(storeId);
+
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(store.getOwnerId()).thenReturn(userId);
+
         when(product.getId()).thenReturn(productId);
         when(product.isHidden()).thenReturn(true);
         when(product.getUpdatedAt()).thenReturn(LocalDateTime.now());
 
         // when
-        UpdateProductHiddenResult result = productService.updateProductHidden(userId, productId, true);
+        UpdateProductHiddenResult result = productService.updateProductHidden(productId, true, userId, Role.OWNER);
 
         // then
         verify(product).hide();
@@ -227,17 +250,23 @@ class ProductServiceTest {
         // given
         Long userId = 1L;
         UUID productId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+
         Product product = mock(Product.class);
-        User user = mock(User.class);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        Store store = mock(Store.class);
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        when(product.getStoreId()).thenReturn(storeId);
+
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(store.getOwnerId()).thenReturn(userId);
+
         when(product.getId()).thenReturn(productId);
         when(product.isHidden()).thenReturn(false);
         when(product.getUpdatedAt()).thenReturn(LocalDateTime.now());
 
         // when
-        UpdateProductHiddenResult result = productService.updateProductHidden(userId, productId, false);
+        UpdateProductHiddenResult result = productService.updateProductHidden(productId, false, userId, Role.OWNER);
 
         // then
         verify(product, never()).hide();
@@ -252,19 +281,24 @@ class ProductServiceTest {
         // given
         Long userId = 1L;
         UUID productId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
 
-        User user = mock(User.class);
         Product product = mock(Product.class);
+        Store store = mock(Store.class);
         LocalDateTime deletedAt = LocalDateTime.now();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        when(product.getStoreId()).thenReturn(storeId);
+
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(store.getOwnerId()).thenReturn(userId);
+
         when(product.getId()).thenReturn(productId);
         when(product.getDeletedAt()).thenReturn(deletedAt);
         when(product.getDeletedBy()).thenReturn(userId);
 
         // when
-        DeleteProductResult result = productService.deleteProduct(userId, productId);
+        DeleteProductResult result = productService.deleteProduct(productId, userId, Role.OWNER);
 
         // then
         verify(product).softDelete(userId);
@@ -273,35 +307,42 @@ class ProductServiceTest {
         assertThat(result.getDeletedBy()).isEqualTo(userId);
     }
 
-    @DisplayName("상품 삭제 시 유저가 없으면 NOT_EXISTED_USER 예외가 발생한다")
+    @DisplayName("상품 삭제 시 상품이 없으면 NOT_EXISTED_PRODUCT 예외가 발생한다")
     @Test
-    void deleteProduct_fails_when_user_not_found() {
+    void deleteProduct_fails_when_product_not_found() {
         // given
         Long userId = 1L;
         UUID productId = UUID.randomUUID();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
         // when / then
-        assertThatThrownBy(() -> productService.deleteProduct(userId, productId))
+        assertThatThrownBy(() -> productService.deleteProduct(productId, userId, Role.OWNER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(ex -> {
                     BusinessException be = (BusinessException) ex;
-                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.NOT_EXISTED_USER);
+                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.NOT_EXISTED_PRODUCT);
                 });
 
-        verifyNoInteractions(productRepository);
+        verifyNoInteractions(storeRepository);
     }
 
     @DisplayName("관리자 상품 목록 조회 성공 - 삭제 제외")
     @Test
     void getAdminProducts_success_without_deleted() {
         // given
+        Long userId = 1L;
         UUID storeId = UUID.randomUUID();
+
         GetAdminProductsPageQuery query = GetAdminProductsPageQuery.from(storeId, "콜", true, false);
         Pageable pageable = PageRequest.of(0, 10);
 
+        Store store = mock(Store.class);
         Product product = mock(Product.class);
+
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(store.getOwnerId()).thenReturn(userId);
+
         when(productRepository.searchAdminProducts(storeId, "콜", true, pageable))
                 .thenReturn(new PageImpl<>(List.of(product), pageable, 1));
 
@@ -315,7 +356,8 @@ class ProductServiceTest {
         when(product.getUpdatedAt()).thenReturn(LocalDateTime.now());
 
         // when
-        GetAdminProductsPageResult result = productService.getAdminProducts(query, pageable);
+        GetAdminProductsPageResult result =
+                productService.getAdminProducts(query, pageable, userId, Role.OWNER);
 
         // then
         assertThat(result.getTotalElements()).isEqualTo(1);
@@ -331,12 +373,18 @@ class ProductServiceTest {
     @Test
     void getAdminProducts_success_with_deleted() {
         // given
+        Long userId = 1L;
         UUID storeId = UUID.randomUUID();
+
         GetAdminProductsPageQuery query = GetAdminProductsPageQuery.from(storeId, "콜", true, true);
         Pageable pageable = PageRequest.of(0, 10);
 
+        Store store = mock(Store.class);
         Product deletedProduct = mock(Product.class);
         Product activeProduct = mock(Product.class);
+
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(store.getOwnerId()).thenReturn(userId);
 
         when(productRepository.searchAdminProductsIncludingDeleted(storeId, "콜", true, pageable))
                 .thenReturn(new PageImpl<>(List.of(deletedProduct, activeProduct), pageable, 2));
@@ -360,7 +408,8 @@ class ProductServiceTest {
         when(activeProduct.getUpdatedAt()).thenReturn(LocalDateTime.now());
 
         // when
-        GetAdminProductsPageResult result = productService.getAdminProducts(query, pageable);
+        GetAdminProductsPageResult result =
+                productService.getAdminProducts(query, pageable, userId, Role.OWNER);
 
         // then
         assertThat(result.getTotalElements()).isEqualTo(2);

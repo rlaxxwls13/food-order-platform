@@ -5,10 +5,17 @@ import nbcamp.food_order_platform.product.application.dto.command.CreateProductC
 import nbcamp.food_order_platform.product.application.dto.command.UpdateProductCommand;
 import nbcamp.food_order_platform.product.application.dto.query.GetAdminProductsPageQuery;
 import nbcamp.food_order_platform.product.application.dto.query.GetProductsPageQuery;
-import nbcamp.food_order_platform.product.application.dto.result.*;
+import nbcamp.food_order_platform.product.application.dto.result.CreateProductResult;
+import nbcamp.food_order_platform.product.application.dto.result.DeleteProductResult;
+import nbcamp.food_order_platform.product.application.dto.result.GetAdminProductsPageResult;
+import nbcamp.food_order_platform.product.application.dto.result.GetProductResult;
+import nbcamp.food_order_platform.product.application.dto.result.GetProductsPageResult;
+import nbcamp.food_order_platform.product.application.dto.result.UpdateProductHiddenResult;
+import nbcamp.food_order_platform.product.application.dto.result.UpdateProductResult;
 import nbcamp.food_order_platform.product.application.service.ProductService;
 import nbcamp.food_order_platform.product.domain.entity.Product;
 import nbcamp.food_order_platform.product.domain.repository.ProductRepository;
+import nbcamp.food_order_platform.user.domain.entity.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,7 +69,7 @@ class ProductServiceIntegrationTest {
         );
 
         // when
-        CreateProductResult result = productService.createProduct(command);
+        CreateProductResult result = productService.createProduct(command, userId, Role.OWNER);
         flushAndClear();
 
         // then
@@ -85,7 +92,7 @@ class ProductServiceIntegrationTest {
         UUID storeId = UUID.randomUUID();
         seedStore(storeId, userId, "조회가게");
 
-        UUID productId = createProduct(storeId, "사이다", 15, 1800, "음료");
+        UUID productId = createProduct(userId, storeId, "사이다", 15, 1800, "음료");
 
         // when
         GetProductResult result = productService.getProduct(productId);
@@ -108,7 +115,7 @@ class ProductServiceIntegrationTest {
         UUID storeId = UUID.randomUUID();
         seedStore(storeId, userId, "수정가게");
 
-        UUID productId = createProduct(storeId, "기존상품", 10, 1000, "기존설명");
+        UUID productId = createProduct(userId, storeId, "기존상품", 10, 1000, "기존설명");
 
         UpdateProductCommand command = new UpdateProductCommand(
                 productId,
@@ -121,7 +128,7 @@ class ProductServiceIntegrationTest {
         );
 
         // when
-        UpdateProductResult result = productService.updateProduct(command);
+        UpdateProductResult result = productService.updateProduct(command, userId, Role.OWNER);
         flushAndClear();
 
         // then
@@ -145,9 +152,9 @@ class ProductServiceIntegrationTest {
         seedStore(storeId1, userId, "가게1");
         seedStore(storeId2, userId, "가게2");
 
-        createProduct(storeId1, "콜라", 10, 2000, "음료");
-        createProduct(storeId1, "사이다", 10, 1800, "음료");
-        createProduct(storeId2, "콜드브루", 10, 4500, "커피");
+        createProduct(userId, storeId1, "콜라", 10, 2000, "음료");
+        createProduct(userId, storeId1, "사이다", 10, 1800, "음료");
+        createProduct(userId, storeId2, "콜드브루", 10, 4500, "커피");
 
         Pageable pageable = PageRequest.of(0, 10);
 
@@ -174,10 +181,10 @@ class ProductServiceIntegrationTest {
         UUID storeId = UUID.randomUUID();
         seedStore(storeId, userId, "숨김가게");
 
-        UUID productId = createProduct(storeId, "숨김상품", 10, 1000, "설명");
+        UUID productId = createProduct(userId, storeId, "숨김상품", 10, 1000, "설명");
 
         // when
-        UpdateProductHiddenResult result = productService.updateProductHidden(userId, productId, true);
+        UpdateProductHiddenResult result = productService.updateProductHidden(productId, true, userId, Role.OWNER);
         flushAndClear();
 
         // then
@@ -196,10 +203,10 @@ class ProductServiceIntegrationTest {
         UUID storeId = UUID.randomUUID();
         seedStore(storeId, userId, "삭제가게");
 
-        UUID productId = createProduct(storeId, "삭제상품", 10, 1000, "설명");
+        UUID productId = createProduct(userId, storeId, "삭제상품", 10, 1000, "설명");
 
         // when
-        DeleteProductResult deleted = productService.deleteProduct(userId, productId);
+        DeleteProductResult deleted = productService.deleteProduct(productId, userId, Role.OWNER);
         flushAndClear();
 
         // then
@@ -219,12 +226,16 @@ class ProductServiceIntegrationTest {
 
         GetAdminProductsPageResult adminWithoutDeleted = productService.getAdminProducts(
                 GetAdminProductsPageQuery.from(storeId, "삭제상품", true, false),
-                pageable
+                pageable,
+                userId,
+                Role.OWNER
         );
 
         GetAdminProductsPageResult adminWithDeleted = productService.getAdminProducts(
                 GetAdminProductsPageQuery.from(storeId, "삭제상품", true, true),
-                pageable
+                pageable,
+                userId,
+                Role.OWNER
         );
 
         assertThat(normalResult.getTotalElements()).isZero();
@@ -245,12 +256,12 @@ class ProductServiceIntegrationTest {
         UUID storeId = UUID.randomUUID();
         seedStore(storeId, userId, "관리자가게");
 
-        UUID activeId = createProduct(storeId, "일반상품", 10, 1000, "설명");
-        UUID hiddenId = createProduct(storeId, "숨김상품", 10, 2000, "설명");
-        UUID deletedId = createProduct(storeId, "삭제상품", 10, 3000, "설명");
+        UUID activeId = createProduct(userId, storeId, "일반상품", 10, 1000, "설명");
+        UUID hiddenId = createProduct(userId, storeId, "숨김상품", 10, 2000, "설명");
+        UUID deletedId = createProduct(userId, storeId, "삭제상품", 10, 3000, "설명");
 
-        productService.updateProductHidden(userId, hiddenId, true);
-        productService.deleteProduct(userId, deletedId);
+        productService.updateProductHidden(hiddenId, true, userId, Role.OWNER);
+        productService.deleteProduct(deletedId, userId, Role.OWNER);
         flushAndClear();
 
         Pageable pageable = PageRequest.of(0, 10);
@@ -258,18 +269,26 @@ class ProductServiceIntegrationTest {
         // when
         GetAdminProductsPageResult result = productService.getAdminProducts(
                 GetAdminProductsPageQuery.from(storeId, null, true, true),
-                pageable
+                pageable,
+                userId,
+                Role.OWNER
         );
 
         // then
         assertThat(result.getTotalElements()).isEqualTo(3);
         assertThat(result.getContent()).hasSize(3);
-        assertThat(result.getContent().stream().anyMatch(p -> p.getProductId().equals(activeId) && !p.isDeleted())).isTrue();
-        assertThat(result.getContent().stream().anyMatch(p -> p.getProductId().equals(hiddenId) && p.isHidden())).isTrue();
-        assertThat(result.getContent().stream().anyMatch(p -> p.getProductId().equals(deletedId) && p.isDeleted())).isTrue();
+        assertThat(result.getContent().stream()
+                .anyMatch(p -> p.getProductId().equals(activeId) && !p.isDeleted()))
+                .isTrue();
+        assertThat(result.getContent().stream()
+                .anyMatch(p -> p.getProductId().equals(hiddenId) && p.isHidden()))
+                .isTrue();
+        assertThat(result.getContent().stream()
+                .anyMatch(p -> p.getProductId().equals(deletedId) && p.isDeleted()))
+                .isTrue();
     }
 
-    private UUID createProduct(UUID storeId, String name, int quantity, int price, String description) {
+    private UUID createProduct(Long userId, UUID storeId, String name, int quantity, int price, String description) {
         CreateProductCommand command = new CreateProductCommand(
                 storeId,
                 name,
@@ -278,7 +297,7 @@ class ProductServiceIntegrationTest {
                 description,
                 false
         );
-        CreateProductResult result = productService.createProduct(command);
+        CreateProductResult result = productService.createProduct(command, userId, Role.OWNER);
         flushAndClear();
         return result.getProductId();
     }
