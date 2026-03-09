@@ -3,6 +3,8 @@ package nbcamp.food_order_platform.order.domain.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import nbcamp.food_order_platform.global.common.BaseEntity;
+import nbcamp.food_order_platform.product.domain.entity.Product;
+import nbcamp.food_order_platform.store.domain.entity.Store;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -27,24 +29,9 @@ public class OrderItem extends BaseEntity {
 
     // 상품 머지후 교체
     //상품 ID
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "product_id")
-//    private Product product;
-    @Column(name = "product_id", nullable = false)
-    @JdbcTypeCode(SqlTypes.UUID)
-    private UUID productId;
-
-    //가게 머지후 교체
-    //가게 ID
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "store_id")
-//    private Store store;
-    @Column(name = "store_id", nullable = false)
-    @JdbcTypeCode(SqlTypes.UUID)
-    private UUID storeId;
-
-    @Column(name = "store_name", nullable = false)
-    private String storeName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    private Product product;
 
     @Column(name = "product_name", nullable = false)
     private String productName;
