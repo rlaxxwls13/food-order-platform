@@ -18,12 +18,13 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Transactional
     public void signup(SignupRequestDto requestDto){
 
         validateUsername(requestDto.getUsername());
@@ -57,7 +58,7 @@ public class UserService {
     }
 
     public List<GetUsersResult> getUsers() {
-        List<User> users = userRepository.findAll();
+        List<User> users = userRepository.findAllByDeletedAtIsNull();
         return users.stream()
                 .map(user -> new GetUsersResult(
                         user.getUserId(),
@@ -84,5 +85,18 @@ public class UserService {
             //ErrorCode 추가 INVALID_ROLE
         }
         user.updateRole(role);
+    }
+
+    @Transactional
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_USER));
+
+        if(user.isDeleted()){
+            throw new BusinessException(ErrorCode.NOT_EXISTED_USER);
+            //ALREADY_DELETED_USER코드 추가
+        }
+
+        user.softDelete(userId);
     }
 }
