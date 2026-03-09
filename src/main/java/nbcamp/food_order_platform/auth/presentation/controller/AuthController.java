@@ -2,11 +2,19 @@ package nbcamp.food_order_platform.auth.presentation.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import nbcamp.food_order_platform.auth.application.dto.LoginAuthResult;
-import nbcamp.food_order_platform.auth.application.service.AuthService;
 import nbcamp.food_order_platform.auth.application.dto.LoginAuthCommand;
+import nbcamp.food_order_platform.auth.application.dto.LoginAuthResult;
+import nbcamp.food_order_platform.auth.application.dto.ReissueCommand;
+import nbcamp.food_order_platform.auth.application.dto.ReissueResult;
+import nbcamp.food_order_platform.auth.application.service.AuthService;
 import nbcamp.food_order_platform.auth.presentation.dto.PostAuthReqDto;
 import nbcamp.food_order_platform.auth.presentation.dto.PostAuthResDto;
+import nbcamp.food_order_platform.auth.presentation.dto.PostReissueReqDto;
+import nbcamp.food_order_platform.auth.presentation.dto.PostReissueResDto;
+import nbcamp.food_order_platform.global.error.ErrorCode;
+import nbcamp.food_order_platform.global.error.exception.BusinessException;
+import nbcamp.food_order_platform.global.security.AuthUser;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,7 +36,23 @@ public class AuthController {
 
         LoginAuthResult loginAuthResult = authService.login(loginAuthCommand);
 
-        return new PostAuthResDto(loginAuthResult.accessToken());
+        return new PostAuthResDto(loginAuthResult.accessToken(), loginAuthResult.refreshToken());
     }
 
+    @PostMapping("/reissue")
+    public PostReissueResDto reissue(@RequestBody PostReissueReqDto postReissueReqDto){
+        ReissueCommand reissueCommand = new ReissueCommand(postReissueReqDto.refreshToken());
+        ReissueResult reissueResult = authService.reissue(reissueCommand);
+        return new PostReissueResDto(reissueResult.accessToken());
+    }
+
+    @PostMapping("/logout")
+    public void logout(@AuthenticationPrincipal AuthUser authUser){
+
+        if(authUser == null){
+            throw new BusinessException(ErrorCode.AUTHORIZATION);
+        }
+
+        authService.logout(authUser.getUserId());
+    }
 }
