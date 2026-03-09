@@ -7,6 +7,7 @@ import nbcamp.food_order_platform.user.application.dto.GetUsersResult;
 import nbcamp.food_order_platform.user.application.dto.PatchRoleCommand;
 import nbcamp.food_order_platform.user.application.service.UserService;
 import nbcamp.food_order_platform.user.presentation.dto.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -69,5 +70,12 @@ public class UserController {
         PatchRoleCommand patchRoleCommand = new PatchRoleCommand(
                 userId, patchRoleReqDto.role());
         userService.updateUserRole(patchRoleCommand);
+    }
+
+    @DeleteMapping("/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(@AuthenticationPrincipal AuthUser authUser){
+
+        userService.deleteUser(authUser.getUserId());
     }
 }

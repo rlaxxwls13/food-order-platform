@@ -28,8 +28,8 @@ import java.util.UUID;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    private final AiDescriptionService aiDescriptionService;
     private final StoreRepository storeRepository;
+    private final AiDescriptionService aiDescriptionService;
     private final AiLogService aiLogService;
 
     @Transactional

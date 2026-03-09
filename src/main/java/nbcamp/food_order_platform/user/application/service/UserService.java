@@ -18,12 +18,13 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Transactional
     public void signup(SignupRequestDto requestDto){
 
         validateUsername(requestDto.getUsername());
@@ -44,20 +45,18 @@ public class UserService {
 
     private void validateUsername(String username){
         if(userRepository.existsByUsername(username)){
-            throw new IllegalArgumentException("이미있는 사용자 입니다");
-            //추후에 GlobalExceptionHandler ErrorCode로 변경
+            throw new BusinessException(ErrorCode.DUPLICATED_USER_ID);
         }
     }
 
     private void validateEmail(String email){
         if(userRepository.existsByEmail(email)){
-            throw new IllegalArgumentException("이미 있는 이메일입니다.");
-            //추후에 GlobalExceptionHandler ErrorCode로 변경
+            throw new BusinessException(ErrorCode.DUPLICATED_EMAIL);
         }
     }
 
     public List<GetUsersResult> getUsers() {
-        List<User> users = userRepository.findAll();
+        List<User> users = userRepository.findAllByDeletedAtIsNull();
         return users.stream()
                 .map(user -> new GetUsersResult(
                         user.getUserId(),
@@ -80,9 +79,20 @@ public class UserService {
         try{
             role = Role.valueOf(patchRoleCommand.role());
         }catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.NOT_EXISTED_USER);
-            //ErrorCode 추가 INVALID_ROLE
+            throw new BusinessException(ErrorCode.INVALID_ROLE);
         }
         user.updateRole(role);
+    }
+
+    @Transactional
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_USER));
+
+        if(user.isDeleted()){
+            throw new BusinessException(ErrorCode.ALREADY_DELETED_USER);
+        }
+
+        user.softDelete(userId);
     }
 }
