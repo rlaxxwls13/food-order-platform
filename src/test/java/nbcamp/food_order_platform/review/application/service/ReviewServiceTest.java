@@ -206,26 +206,6 @@ class ReviewServiceTest {
             verify(testReview, times(1)).updateStatus(ReviewStatus.HIDDEN);
             assertThat(result).isNotNull();
         }
-
-        @Test
-        @DisplayName("실패 - CUSTOMER가 상태 변경 시도")
-        void changeStatus_noPermission() {
-            // given
-            UpdateReviewStatusCommand command = UpdateReviewStatusCommand.builder()
-                    .reviewId(reviewId)
-                    .userId(1L) // Customer ID
-                    .status(ReviewStatus.HIDDEN)
-                    .build();
-
-            given(userRepository.findById(1L)).willReturn(Optional.of(testUser));
-            given(reviewRepository.findById(reviewId)).willReturn(Optional.of(testReview));
-
-            // when & then
-            assertThatThrownBy(() -> reviewService.changeReviewStatus(command))
-                    .isInstanceOf(BusinessException.class) // 1. 이제 BusinessException이 터져야 함
-                    .extracting("errorCode") // 2. 그 안에 담긴 에러 코드를 꺼내서
-                    .isEqualTo(ErrorCode.NO_PERMISSION);
-        }
     }
 
     // 3. 리뷰 삭제 테스트

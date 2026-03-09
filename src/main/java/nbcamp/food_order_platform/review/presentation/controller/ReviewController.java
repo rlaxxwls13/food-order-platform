@@ -18,6 +18,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -66,15 +67,14 @@ public class ReviewController {
     /**
      * 2-2. 리뷰 상태 변경 (숨김/노출) - MASTER, MANAGER 전용
      */
+    @PreAuthorize("hasAnyRole('MASTER', 'MANAGER')") // 추가: 실행 전 역할 확인
     @PatchMapping("/admin/reviews/{reviewId}/status")
     public ResponseEntity<UpdateReviewResult> changeReviewStatus(
             @PathVariable UUID reviewId,
             @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody PatchReviewStatusReqDto dto) {
 
-        Long managerUserId = authUser.getUserId();
-
-        UpdateReviewStatusCommand serviceDto = UpdateReviewStatusCommand.of(reviewId,managerUserId,dto.getStatus());
+        UpdateReviewStatusCommand serviceDto = UpdateReviewStatusCommand.of(reviewId,authUser.getUserId(),dto.getStatus());
         return ResponseEntity.ok(reviewService.changeReviewStatus(serviceDto));
     }
     /**
@@ -107,6 +107,7 @@ public class ReviewController {
     /**
      * 4-2. 가게별 리뷰 조회 (MANAGER용 - 전체 노출)
      */
+    @PreAuthorize("hasAnyRole('MASTER', 'MANAGER')") // 추가: 실행 전 역할 확인
     @GetMapping("/admin/reviews/stores/{storeId}")
     public ResponseEntity<Slice<GetReviewManagerResult>> getStoreReviewsForManager(
             @PathVariable UUID storeId,
@@ -114,9 +115,7 @@ public class ReviewController {
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
             ) {
 
-        Long managerUserId = authUser.getUserId();
-
-        GetReviewManagerQuery serviceDto = GetReviewManagerQuery.storeForManager(storeId,managerUserId,pageable);
+        GetReviewManagerQuery serviceDto = GetReviewManagerQuery.storeForManager(storeId,authUser.getUserId(),pageable);
         return ResponseEntity.ok(reviewService.getReviewsByStoreForManager(serviceDto));
     }
     /**
@@ -132,15 +131,14 @@ public class ReviewController {
     /**
      *  5-2. 특정 유저 리뷰 조회 (MANAGER용 - 전체 노출)
      */
+    @PreAuthorize("hasAnyRole('MASTER', 'MANAGER')") // 추가: 실행 전 역할 확인
     @GetMapping("/admin/reviews/users/{userId}")
     public ResponseEntity<Slice<GetReviewManagerResult>> getUserReviewsForManager(
             @PathVariable Long userId,
             @AuthenticationPrincipal AuthUser authUser,
             @PageableDefault(size = 10) Pageable pageable) {
 
-        Long managerUserId = authUser.getUserId();
-
-        GetReviewManagerQuery serviceDto = GetReviewManagerQuery.userForManager(userId,managerUserId,pageable);
+        GetReviewManagerQuery serviceDto = GetReviewManagerQuery.userForManager(userId,authUser.getUserId(),pageable);
         return ResponseEntity.ok(reviewService.getReviewsByUserForManager(serviceDto));
     }
 

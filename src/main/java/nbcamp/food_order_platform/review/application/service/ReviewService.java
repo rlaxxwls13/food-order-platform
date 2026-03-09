@@ -87,7 +87,6 @@ public class ReviewService {
     // 2-2. 리뷰 상태 변경 (MASTER,MANAGER)
     public UpdateReviewResult changeReviewStatus(UpdateReviewStatusCommand dto) {
         Review review = hasReview(dto.getReviewId());
-        validateManagerRole(dto.getUserId());
 
         // 엔티티의 updateStatus 메서드
         review.updateStatus(dto.getStatus());
@@ -120,8 +119,6 @@ public class ReviewService {
     // 4-2. 가게 리뷰 조회(MASTER/MANAGER)
     @Transactional(readOnly = true)
     public Slice<GetReviewManagerResult> getReviewsByStoreForManager(GetReviewManagerQuery dto) {
-         // 권한 체크 - 유저를 찾고, 없으면 에러
-        validateManagerRole(dto.getManagerId());
 
         // 모든 리뷰 가져오기(VISIBLE,HIDDEN까지)
         return reviewRepository.findAllByStoreId(dto.getStoreId(), dto.getPageable())
@@ -139,8 +136,6 @@ public class ReviewService {
     // 5-2. 유저 리뷰 조회(MASTER/MANAGER)
     @Transactional(readOnly = true)
     public Slice<GetReviewManagerResult> getReviewsByUserForManager(GetReviewManagerQuery dto) {
-        // 권한 체크 - 유저를 찾고, 없으면 에러
-        validateManagerRole(dto.getManagerId());
 
         // 해당 유저가 쓴 모든 리뷰 가져오기(VISIBLE,HIDDEN까지)
         // .map()을 사용해 엔티티를 DTO로 변환
@@ -179,15 +174,6 @@ public class ReviewService {
       return order;
  }
 
-    // 매니저 권한 확인 메서드
-    private void validateManagerRole(Long dto) {
-        User user = userRepository.findById(dto)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_USER));
-
-        if (user.getRole() != Role.MANAGER && user.getRole() != Role.MASTER) {
-            throw new BusinessException(ErrorCode.NO_PERMISSION);
-        }
-    }
     // 리뷰 존재 검증 메서드
     private Review hasReview(UUID dto) {
         Review review = reviewRepository.findById(dto)
