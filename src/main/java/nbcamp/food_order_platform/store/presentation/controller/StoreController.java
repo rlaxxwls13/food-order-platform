@@ -2,6 +2,7 @@ package nbcamp.food_order_platform.store.presentation.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import nbcamp.food_order_platform.global.security.AuthUser;
 import nbcamp.food_order_platform.store.application.dto.request.CreateStoreCommand;
 import nbcamp.food_order_platform.store.application.dto.common.StoreResult;
 import nbcamp.food_order_platform.store.application.dto.request.GetStoresAdminPageQuery;
@@ -15,6 +16,7 @@ import nbcamp.food_order_platform.store.presentation.dto.request.PostStoreReqDto
 import nbcamp.food_order_platform.store.presentation.dto.request.UpdateStoreReqDto;
 import nbcamp.food_order_platform.store.presentation.dto.response.GetStoresAdminPageResDto;
 import nbcamp.food_order_platform.store.presentation.dto.response.GetStoresPageResDto;
+import nbcamp.food_order_platform.user.domain.entity.Role;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -34,8 +36,7 @@ public class StoreController {
 
     @PostMapping
     public ResponseEntity<StoreResDto> createStore(
-            @AuthenticationPrincipal Long userId,
-            // @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody PostStoreReqDto request
     ) {
         // 추후에 권한 검증 추가
@@ -45,7 +46,7 @@ public class StoreController {
                 request.getAddressDetail(),
                 request.getCategoryIds()
         );
-        StoreResult result = storeService.createStore(userId, createStoreCommand);
+        StoreResult result = storeService.createStore(createStoreCommand, authUser.getUserId(), Role.valueOf(authUser.getRole()));
         StoreResDto response = StoreResDto.from(
                 result.getStore(), result.getStoreRegion(), result.getStoreCategories()
         );
@@ -88,6 +89,7 @@ public class StoreController {
 
     @GetMapping("/admin")
     public ResponseEntity<GetStoresAdminPageResDto> getAdminStores(
+            @AuthenticationPrincipal AuthUser authUser,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) UUID regionCode,
@@ -95,12 +97,12 @@ public class StoreController {
             @RequestParam(required = false) String storeName,
             @RequestParam(required = false, defaultValue = "false") boolean includeDeleted
     ) {
-        Pageable pageable = PageRequest.of(page, normalizeSize(size), Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, normalizeSize(size), Sort.by(Sort.Direction.DESC, "created_at"));
 
         GetStoresAdminPageQuery query = GetStoresAdminPageQuery.from(
                 regionCode, categoryId, storeName, includeDeleted
         );
-        GetStoresAdminPageResult result = storeService.getAdminStores(query, pageable);
+        GetStoresAdminPageResult result = storeService.getAdminStores(query, pageable, Role.valueOf(authUser.getRole()));
         GetStoresAdminPageResDto response = GetStoresAdminPageResDto.from(result);
 
         return ResponseEntity.ok(response);
@@ -108,8 +110,7 @@ public class StoreController {
 
     @PatchMapping("/{storeId}")
     public ResponseEntity<StoreResDto> updateStore(
-            @AuthenticationPrincipal Long userId,
-            // @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @AuthenticationPrincipal AuthUser authUser,
             @PathVariable UUID storeId,
             @Valid @RequestBody UpdateStoreReqDto request
     ) {
@@ -118,7 +119,7 @@ public class StoreController {
                 request.getName(), request.getRegionCode(),
                 request.getRegionDetail(), request.getCategoryIds()
         );
-        StoreResult result = storeService.updateStore(userId, command);
+        StoreResult result = storeService.updateStore(command, authUser.getUserId(), Role.valueOf(authUser.getRole()));
         StoreResDto response = StoreResDto.from(
                 result.getStore(),
                 result.getStoreRegion(),
@@ -130,11 +131,10 @@ public class StoreController {
 
     @DeleteMapping("/{storeId}")
     public ResponseEntity<StoreResDto> deleteStore(
-            @AuthenticationPrincipal Long userId,
-            // @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @AuthenticationPrincipal AuthUser authUser,
             @PathVariable UUID storeId
     ) {
-        StoreResult result = storeService.deleteStore(userId, storeId);
+        StoreResult result = storeService.deleteStore(storeId, authUser.getUserId(), Role.valueOf(authUser.getRole()));
         StoreResDto response = StoreResDto.from(
                 result.getStore(),
                 result.getStoreRegion(),

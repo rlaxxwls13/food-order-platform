@@ -16,29 +16,28 @@ import nbcamp.food_order_platform.store.domain.entity.Store;
 import nbcamp.food_order_platform.store.domain.entity.StoreCategory;
 import nbcamp.food_order_platform.store.domain.entity.StoreRegion;
 import nbcamp.food_order_platform.store.domain.repository.StoreRepository;
-import nbcamp.food_order_platform.user.domain.entity.User;
-import nbcamp.food_order_platform.user.domain.repository.UserRepository;
+import nbcamp.food_order_platform.user.domain.entity.Role;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class StoreServiceTest {
 
-    @Mock
-    private UserRepository userRepository;
     @Mock
     private StoreRepository storeRepository;
     @Mock
@@ -46,8 +45,12 @@ class StoreServiceTest {
     @Mock
     private CategoryRepository categoryRepository;
 
-    @InjectMocks
     private StoreService storeService;
+
+    @BeforeEach
+    void setUp() {
+        storeService = new StoreService(storeRepository, regionCodeRepository, categoryRepository);
+    }
 
     @DisplayName("가게 단건 조회 성공")
     @Test
@@ -101,6 +104,14 @@ class StoreServiceTest {
         GetStoresPageQuery query = mock(GetStoresPageQuery.class);
         Pageable pageable = PageRequest.of(0, 10);
 
+        UUID regionCode = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        String storeName = "store";
+
+        when(query.getRegionCode()).thenReturn(regionCode);
+        when(query.getCategoryId()).thenReturn(categoryId);
+        when(query.getStoreName()).thenReturn(storeName);
+
         Store store1 = mock(Store.class);
         Store store2 = mock(Store.class);
         StoreRegion region1 = mock(StoreRegion.class);
@@ -112,12 +123,8 @@ class StoreServiceTest {
         StoreResult result2 = mock(StoreResult.class);
         GetStoresPageResult pageResult = mock(GetStoresPageResult.class);
 
-        when(storeRepository.searchStores(
-                query.getRegionCode(),
-                query.getCategoryId(),
-                query.getStoreName(),
-                pageable
-        )).thenReturn(new PageImpl<>(List.of(store1, store2), pageable, 2));
+        when(storeRepository.searchStores(regionCode, categoryId, storeName, pageable))
+                .thenReturn(new PageImpl<>(List.of(store1, store2), pageable, 2));
 
         when(store1.getStoreRegion()).thenReturn(region1);
         when(store1.getStoreCategories()).thenReturn(List.of(category1));
@@ -137,12 +144,7 @@ class StoreServiceTest {
 
             // then
             assertThat(result).isSameAs(pageResult);
-            verify(storeRepository).searchStores(
-                    query.getRegionCode(),
-                    query.getCategoryId(),
-                    query.getStoreName(),
-                    pageable
-            );
+            verify(storeRepository).searchStores(regionCode, categoryId, storeName, pageable);
             pageResultMock.verify(() -> GetStoresPageResult.from(any(Page.class)), times(1));
         }
     }
@@ -152,6 +154,7 @@ class StoreServiceTest {
     void updateStore_success() {
         // given
         Long userId = 1L;
+        Role role = Role.OWNER;
         UUID storeId = UUID.randomUUID();
         UUID newRegionCodeId = UUID.randomUUID();
         UUID currentCategoryId = UUID.randomUUID();
@@ -166,10 +169,8 @@ class StoreServiceTest {
         when(command.getRegionDetail()).thenReturn("new detail");
         when(command.getCategoryIds()).thenReturn(List.of(currentCategoryId, addedCategoryId));
 
-        User user = mock(User.class);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-
         Store store = mock(Store.class);
+        when(store.getOwnerId()).thenReturn(userId);
         when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
 
         StoreRegion storeRegion = mock(StoreRegion.class);
@@ -202,16 +203,15 @@ class StoreServiceTest {
         StoreResult fakeResult = mock(StoreResult.class);
 
         try (MockedStatic<StoreResult> mocked = Mockito.mockStatic(StoreResult.class)) {
-            mocked.when(() -> StoreResult.from(eq(store), any(), any())).thenReturn(fakeResult);
+            mocked.when(() -> StoreResult.from(eq(store), eq(storeRegion), any())).thenReturn(fakeResult);
 
             // when
-            StoreResult result = storeService.updateStore(userId, command);
+            StoreResult result = storeService.updateStore(command, userId, role);
 
             // then
             assertThat(result).isSameAs(fakeResult);
 
-            verify(userRepository).findById(userId);
-            verify(storeRepository).findById(storeId);
+            verify(storeRepository, times(2)).findById(storeId);
 
             verify(store).changeOwner(99L);
             verify(store).changeName("new store");
@@ -225,24 +225,30 @@ class StoreServiceTest {
         }
     }
 
-    @DisplayName("가게 수정 시 유저가 없으면 NOT_EXISTED_USER 예외가 발생한다")
+    @DisplayName("가게 수정 시 권한이 없으면 NO_PERMISSION 예외가 발생한다")
     @Test
-    void updateStore_fails_when_user_not_found() {
+    void updateStore_fails_when_no_permission() {
         // given
         Long userId = 1L;
-        UpdateStoreCommand command = mock(UpdateStoreCommand.class);
+        UUID storeId = UUID.randomUUID();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        UpdateStoreCommand command = mock(UpdateStoreCommand.class);
+        when(command.getStoreId()).thenReturn(storeId);
+
+        Store store = mock(Store.class);
+        when(store.getOwnerId()).thenReturn(999L);
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
 
         // when / then
-        assertThatThrownBy(() -> storeService.updateStore(userId, command))
+        assertThatThrownBy(() -> storeService.updateStore(command, userId, Role.OWNER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(ex -> {
                     BusinessException be = (BusinessException) ex;
-                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.NOT_EXISTED_USER);
+                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.NO_PERMISSION);
                 });
 
-        verifyNoInteractions(storeRepository, regionCodeRepository, categoryRepository);
+        verify(storeRepository, times(1)).findById(storeId);
+        verifyNoInteractions(regionCodeRepository, categoryRepository);
     }
 
     @DisplayName("가게 수정 시 가게가 없으면 NOT_EXISTED_STORE 예외가 발생한다")
@@ -255,12 +261,10 @@ class StoreServiceTest {
         UpdateStoreCommand command = mock(UpdateStoreCommand.class);
         when(command.getStoreId()).thenReturn(storeId);
 
-        User user = mock(User.class);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(storeRepository.findById(storeId)).thenReturn(Optional.empty());
 
         // when / then
-        assertThatThrownBy(() -> storeService.updateStore(userId, command))
+        assertThatThrownBy(() -> storeService.updateStore(command, userId, Role.OWNER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(ex -> {
                     BusinessException be = (BusinessException) ex;
@@ -279,13 +283,14 @@ class StoreServiceTest {
         UpdateStoreCommand command = mock(UpdateStoreCommand.class);
         when(command.getStoreId()).thenReturn(storeId);
         when(command.getRegionCode()).thenReturn(regionCodeId);
+        when(command.getOwnerId()).thenReturn(null);
+        when(command.getName()).thenReturn(null);
 
-        User user = mock(User.class);
         Store store = mock(Store.class);
         StoreRegion storeRegion = mock(StoreRegion.class);
         RegionCode currentRegionCode = mock(RegionCode.class);
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(store.getOwnerId()).thenReturn(userId);
         when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
         when(store.getStoreRegion()).thenReturn(storeRegion);
         when(storeRegion.getRegionCode()).thenReturn(currentRegionCode);
@@ -294,7 +299,7 @@ class StoreServiceTest {
         when(regionCodeRepository.findById(regionCodeId)).thenReturn(Optional.empty());
 
         // when / then
-        assertThatThrownBy(() -> storeService.updateStore(userId, command))
+        assertThatThrownBy(() -> storeService.updateStore(command, userId, Role.OWNER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(ex -> {
                     BusinessException be = (BusinessException) ex;
@@ -319,13 +324,12 @@ class StoreServiceTest {
         when(command.getRegionDetail()).thenReturn(null);
         when(command.getCategoryIds()).thenReturn(List.of(categoryId1, categoryId2));
 
-        User user = mock(User.class);
         Store store = mock(Store.class);
         StoreRegion storeRegion = mock(StoreRegion.class);
         RegionCode currentRegionCode = mock(RegionCode.class);
         Category onlyOneCategory = mock(Category.class);
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(store.getOwnerId()).thenReturn(userId);
         when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
         when(store.getStoreRegion()).thenReturn(storeRegion);
         when(storeRegion.getRegionCode()).thenReturn(currentRegionCode);
@@ -335,7 +339,7 @@ class StoreServiceTest {
                 .thenReturn(List.of(onlyOneCategory));
 
         // when / then
-        assertThatThrownBy(() -> storeService.updateStore(userId, command))
+        assertThatThrownBy(() -> storeService.updateStore(command, userId, Role.OWNER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(ex -> {
                     BusinessException be = (BusinessException) ex;
@@ -350,13 +354,12 @@ class StoreServiceTest {
         Long userId = 1L;
         UUID storeId = UUID.randomUUID();
 
-        User user = mock(User.class);
         Store store = mock(Store.class);
         StoreRegion storeRegion = mock(StoreRegion.class);
         StoreCategory storeCategory = mock(StoreCategory.class);
         StoreResult fakeResult = mock(StoreResult.class);
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(store.getOwnerId()).thenReturn(userId);
         when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
         when(store.getStoreRegion()).thenReturn(storeRegion);
         when(store.getStoreCategories()).thenReturn(List.of(storeCategory));
@@ -366,32 +369,35 @@ class StoreServiceTest {
                     .thenReturn(fakeResult);
 
             // when
-            StoreResult result = storeService.deleteStore(userId, storeId);
+            StoreResult result = storeService.deleteStore(storeId, userId, Role.OWNER);
 
             // then
             assertThat(result).isSameAs(fakeResult);
+            verify(storeRepository, times(2)).findById(storeId);
             verify(store).softDelete(userId);
         }
     }
 
-    @DisplayName("가게 삭제 시 유저가 없으면 NOT_EXISTED_USER 예외가 발생한다")
+    @DisplayName("가게 삭제 시 권한이 없으면 NO_PERMISSION 예외가 발생한다")
     @Test
-    void deleteStore_fails_when_user_not_found() {
+    void deleteStore_fails_when_no_permission() {
         // given
         Long userId = 1L;
         UUID storeId = UUID.randomUUID();
 
-        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        Store store = mock(Store.class);
+        when(store.getOwnerId()).thenReturn(999L);
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
 
         // when / then
-        assertThatThrownBy(() -> storeService.deleteStore(userId, storeId))
+        assertThatThrownBy(() -> storeService.deleteStore(storeId, userId, Role.OWNER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(ex -> {
                     BusinessException be = (BusinessException) ex;
-                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.NOT_EXISTED_USER);
+                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.NO_PERMISSION);
                 });
 
-        verifyNoInteractions(storeRepository);
+        verify(storeRepository, times(1)).findById(storeId);
     }
 
     @DisplayName("관리자 목록 조회 성공 - 삭제 제외")
@@ -401,7 +407,14 @@ class StoreServiceTest {
         GetStoresAdminPageQuery query = mock(GetStoresAdminPageQuery.class);
         Pageable pageable = PageRequest.of(0, 10);
 
+        UUID regionCode = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        String storeName = "store";
+
         when(query.getIncludeDeleted()).thenReturn(false);
+        when(query.getRegionCode()).thenReturn(regionCode);
+        when(query.getCategoryId()).thenReturn(categoryId);
+        when(query.getStoreName()).thenReturn(storeName);
 
         Store store = mock(Store.class);
         StoreRegion storeRegion = mock(StoreRegion.class);
@@ -409,12 +422,8 @@ class StoreServiceTest {
         StoreResult storeResult = mock(StoreResult.class);
         GetStoresAdminPageResult adminPageResult = mock(GetStoresAdminPageResult.class);
 
-        when(storeRepository.searchAdminStores(
-                query.getRegionCode(),
-                query.getCategoryId(),
-                query.getStoreName(),
-                pageable
-        )).thenReturn(new PageImpl<>(List.of(store), pageable, 1));
+        when(storeRepository.searchAdminStores(regionCode, categoryId, storeName, pageable))
+                .thenReturn(new PageImpl<>(List.of(store), pageable, 1));
 
         when(store.getStoreRegion()).thenReturn(storeRegion);
         when(store.getStoreCategories()).thenReturn(List.of(storeCategory));
@@ -428,16 +437,11 @@ class StoreServiceTest {
                     .thenReturn(adminPageResult);
 
             // when
-            GetStoresAdminPageResult result = storeService.getAdminStores(query, pageable);
+            GetStoresAdminPageResult result = storeService.getAdminStores(query, pageable, Role.MANAGER);
 
             // then
             assertThat(result).isSameAs(adminPageResult);
-            verify(storeRepository).searchAdminStores(
-                    query.getRegionCode(),
-                    query.getCategoryId(),
-                    query.getStoreName(),
-                    pageable
-            );
+            verify(storeRepository).searchAdminStores(regionCode, categoryId, storeName, pageable);
             verify(storeRepository, never()).searchAdminStoreIdsIncludingDeleted(any(), any(), any(), any());
             verify(storeRepository, never()).findAllByIdInIncludingDeleted(any());
         }
@@ -453,7 +457,14 @@ class StoreServiceTest {
         UUID deletedStoreId = UUID.randomUUID();
         UUID activeStoreId = UUID.randomUUID();
 
+        UUID regionCode = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        String storeName = "store";
+
         when(query.getIncludeDeleted()).thenReturn(true);
+        when(query.getRegionCode()).thenReturn(regionCode);
+        when(query.getCategoryId()).thenReturn(categoryId);
+        when(query.getStoreName()).thenReturn(storeName);
 
         Page<UUID> idPage = new PageImpl<>(List.of(deletedStoreId, activeStoreId), pageable, 2);
 
@@ -468,13 +479,10 @@ class StoreServiceTest {
 
         StoreResult deletedResult = mock(StoreResult.class);
         StoreResult activeResult = mock(StoreResult.class);
+        GetStoresAdminPageResult finalResult = mock(GetStoresAdminPageResult.class);
 
-        when(storeRepository.searchAdminStoreIdsIncludingDeleted(
-                query.getRegionCode(),
-                query.getCategoryId(),
-                query.getStoreName(),
-                pageable
-        )).thenReturn(idPage);
+        when(storeRepository.searchAdminStoreIdsIncludingDeleted(regionCode, categoryId, storeName, pageable))
+                .thenReturn(idPage);
 
         when(storeRepository.findAllByIdInIncludingDeleted(List.of(deletedStoreId, activeStoreId)))
                 .thenReturn(List.of(deletedStore, activeStore));
@@ -496,7 +504,7 @@ class StoreServiceTest {
             storeResultMock.when(() -> StoreResult.from(activeStore, activeRegion, List.of(activeCategory)))
                     .thenReturn(activeResult);
 
-            pageResultMock.when(() -> GetStoresAdminPageResult.from(Mockito.any(Page.class)))
+            pageResultMock.when(() -> GetStoresAdminPageResult.from(any(Page.class)))
                     .thenAnswer(invocation -> {
                         Page<StoreResult> page = invocation.getArgument(0);
 
@@ -505,19 +513,15 @@ class StoreServiceTest {
                         assertThat(page.getContent().get(1)).isSameAs(activeResult);
                         assertThat(page.getTotalElements()).isEqualTo(2);
 
-                        return mock(GetStoresAdminPageResult.class);
+                        return finalResult;
                     });
 
             // when
-            storeService.getAdminStores(query, pageable);
+            GetStoresAdminPageResult result = storeService.getAdminStores(query, pageable, Role.MANAGER);
 
             // then
-            verify(storeRepository).searchAdminStoreIdsIncludingDeleted(
-                    query.getRegionCode(),
-                    query.getCategoryId(),
-                    query.getStoreName(),
-                    pageable
-            );
+            assertThat(result).isSameAs(finalResult);
+            verify(storeRepository).searchAdminStoreIdsIncludingDeleted(regionCode, categoryId, storeName, pageable);
             verify(storeRepository).findAllByIdInIncludingDeleted(List.of(deletedStoreId, activeStoreId));
         }
     }
@@ -529,13 +533,17 @@ class StoreServiceTest {
         GetStoresAdminPageQuery query = mock(GetStoresAdminPageQuery.class);
         Pageable pageable = PageRequest.of(0, 10);
 
+        UUID regionCode = UUID.randomUUID();
+        UUID categoryId = UUID.randomUUID();
+        String storeName = "store";
+
         when(query.getIncludeDeleted()).thenReturn(true);
-        when(storeRepository.searchAdminStoreIdsIncludingDeleted(
-                query.getRegionCode(),
-                query.getCategoryId(),
-                query.getStoreName(),
-                pageable
-        )).thenReturn(Page.empty(pageable));
+        when(query.getRegionCode()).thenReturn(regionCode);
+        when(query.getCategoryId()).thenReturn(categoryId);
+        when(query.getStoreName()).thenReturn(storeName);
+
+        when(storeRepository.searchAdminStoreIdsIncludingDeleted(regionCode, categoryId, storeName, pageable))
+                .thenReturn(Page.empty(pageable));
 
         GetStoresAdminPageResult finalResult = mock(GetStoresAdminPageResult.class);
 
@@ -543,11 +551,29 @@ class StoreServiceTest {
             pageResultMock.when(() -> GetStoresAdminPageResult.from(any(Page.class))).thenReturn(finalResult);
 
             // when
-            GetStoresAdminPageResult result = storeService.getAdminStores(query, pageable);
+            GetStoresAdminPageResult result = storeService.getAdminStores(query, pageable, Role.MANAGER);
 
             // then
             assertThat(result).isSameAs(finalResult);
             verify(storeRepository, never()).findAllByIdInIncludingDeleted(any());
         }
+    }
+
+    @DisplayName("관리자 목록 조회 시 관리자가 아니면 NO_PERMISSION 예외가 발생한다")
+    @Test
+    void getAdminStores_fails_when_not_admin() {
+        // given
+        GetStoresAdminPageQuery query = mock(GetStoresAdminPageQuery.class);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when / then
+        assertThatThrownBy(() -> storeService.getAdminStores(query, pageable, Role.OWNER))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> {
+                    BusinessException be = (BusinessException) ex;
+                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.NO_PERMISSION);
+                });
+
+        verifyNoInteractions(storeRepository);
     }
 }
