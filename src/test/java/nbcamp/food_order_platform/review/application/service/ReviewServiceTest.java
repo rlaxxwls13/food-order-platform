@@ -1,14 +1,15 @@
 package nbcamp.food_order_platform.review.application.service;
 
+import nbcamp.food_order_platform.global.error.ErrorCode;
+import nbcamp.food_order_platform.global.error.exception.BusinessException;
 import nbcamp.food_order_platform.global.security.JwtUtil;
 import nbcamp.food_order_platform.order.domain.entity.Order;
 import nbcamp.food_order_platform.order.domain.entity.OrderStatus;
 import nbcamp.food_order_platform.order.domain.repository.OrderRepository;
-import nbcamp.food_order_platform.review.application.dto.*; // 변경된 CQRS DTO들
+import nbcamp.food_order_platform.review.application.dto.*;
 import nbcamp.food_order_platform.review.domain.entity.Review;
 import nbcamp.food_order_platform.review.domain.entity.ReviewStatus;
 import nbcamp.food_order_platform.review.domain.repository.ReviewRepository;
-import nbcamp.food_order_platform.review.presentation.controller.ReviewController;
 import nbcamp.food_order_platform.store.domain.entity.Store;
 import nbcamp.food_order_platform.store.domain.repository.StoreRepository;
 import nbcamp.food_order_platform.user.domain.entity.Role;
@@ -24,8 +25,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -37,7 +36,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -222,8 +222,9 @@ class ReviewServiceTest {
 
             // when & then
             assertThatThrownBy(() -> reviewService.changeReviewStatus(command))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("관리자 권한이 아닙니다.");
+                    .isInstanceOf(BusinessException.class) // 1. 이제 BusinessException이 터져야 함
+                    .extracting("errorCode") // 2. 그 안에 담긴 에러 코드를 꺼내서
+                    .isEqualTo(ErrorCode.NO_PERMISSION);
         }
     }
 

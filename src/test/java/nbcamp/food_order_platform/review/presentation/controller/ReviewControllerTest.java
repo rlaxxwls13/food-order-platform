@@ -169,7 +169,7 @@ class ReviewControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].nickname").value("강아지"))
                 .andExpect(jsonPath("$.content[1].nickname").value("고양이"))
-                .andExpect(jsonPath("$.hasNext").value(false));
+                .andExpect(jsonPath("$.last").value(true));
     }
 
     @Test
@@ -197,7 +197,7 @@ class ReviewControllerTest {
         // when & then
         mockMvc.perform(get("/api/v1/admin/reviews/stores/{storeId}", storeId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].status").value("VISIBLE"))
-                .andExpect(jsonPath("$.content[1].status").value("HIDDEN"));
+                .andExpect(jsonPath("$.content[0].status").value("HIDDEN"))
+                .andExpect(jsonPath("$.content[1].status").value("VISIBLE"));
     }
 }
