@@ -13,7 +13,7 @@ services:
       - "5432:5432"
 
   app:
-    image: my-app:latest
+    image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
     container_name: spring-app
     restart: always
     ports:

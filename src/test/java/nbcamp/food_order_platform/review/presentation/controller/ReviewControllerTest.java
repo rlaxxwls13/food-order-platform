@@ -47,6 +47,9 @@ class ReviewControllerTest {
     @MockitoBean
     private JwtUtil jwtUtil;
 
+    @MockitoBean
+    private JwtUtil jwtUtil;
+
     @Test
     @DisplayName("1. 리뷰 작성 성공 테스트")
     void createReview_success() throws Exception {
