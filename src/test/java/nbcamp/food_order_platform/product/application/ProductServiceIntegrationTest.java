@@ -33,7 +33,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@ActiveProfiles("local")
+@ActiveProfiles({"prod", "local"})
 @Transactional
 class ProductServiceIntegrationTest {
 

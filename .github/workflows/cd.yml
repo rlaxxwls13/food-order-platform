@@ -52,6 +52,8 @@ jobs:
             POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
             ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
             ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             EOF
             aws ecr get-login-password --region ${{secrets.AWS_REGION}} | docker login --username AWS --password-stdin ${{steps.login-ecr.outputs.registry}}
             cd ~/food-order-platform
