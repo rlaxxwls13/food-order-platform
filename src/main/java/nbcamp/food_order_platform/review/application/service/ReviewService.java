@@ -12,7 +12,6 @@ import nbcamp.food_order_platform.review.domain.entity.ReviewStatus;
 import nbcamp.food_order_platform.review.domain.repository.ReviewRepository;
 import nbcamp.food_order_platform.store.domain.entity.Store;
 import nbcamp.food_order_platform.store.domain.repository.StoreRepository;
-import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
 import org.springframework.data.domain.Pageable;
@@ -68,8 +67,8 @@ public class ReviewService {
         // 본인 리뷰인지 확인 (에러:권한 없음)
         validateReviewOwner(review, dto.getUserId());
 
-        // 수정 기간 체크 (똑같이 주문후 3일이내)
-        if (review.getCreatedAt().plusDays(3).isBefore(LocalDateTime.now())) {
+        // 수정 기간 체크 : 리뷰 작성일이 아니라 '주문 생성일' 기준으로 변경
+        if (review.getOrder().getCreatedAt().plusDays(3).isBefore(LocalDateTime.now())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED);
         }
 
