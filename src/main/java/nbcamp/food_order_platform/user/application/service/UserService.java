@@ -27,6 +27,7 @@ public class UserService {
 
         validateUsername(requestDto.getUsername());
         validateEmail(requestDto.getEmail());
+        validatePassword(requestDto.getPassword());
 
         String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
 
@@ -42,6 +43,13 @@ public class UserService {
     }
 
     private void validateUsername(String username){
+        if(username.length() < 4 || username.length() > 10 ){
+            throw new BusinessException(ErrorCode.INVALID_ID_LENGTH);
+        }
+        if(username.matches("^[a-z0-9]{4,10}$")){
+            throw new BusinessException(ErrorCode.INVALID_ID_PATTERN);
+        }
+
         if(userRepository.existsByUsername(username)){
             throw new BusinessException(ErrorCode.DUPLICATED_USER_ID);
         }
@@ -50,6 +58,16 @@ public class UserService {
     private void validateEmail(String email){
         if(userRepository.existsByEmail(email)){
             throw new BusinessException(ErrorCode.DUPLICATED_EMAIL);
+        }
+    }
+
+    private void validatePassword(String password){
+        if(password.length() < 8 || password.length() > 20){
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD_LENGTH);
+        }
+
+        if(!password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*]).+$")){
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD_PATTERN);
         }
     }
 
