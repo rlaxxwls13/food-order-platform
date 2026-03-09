@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 @DataJpaTest
-@ActiveProfiles("prod")
+@ActiveProfiles({"prod", "local"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class StoreRepositoryTest {
 
