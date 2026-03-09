@@ -3,9 +3,10 @@ package nbcamp.food_order_platform.order.application.service;
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
-import nbcamp.food_order_platform.order.application.dto.command.OrderCreateCommand;
+import nbcamp.food_order_platform.global.security.AuthUser;
 import nbcamp.food_order_platform.order.domain.entity.*;
 import nbcamp.food_order_platform.order.domain.repository.OrderRepository;
+import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.order.presentation.dto.request.OrderCreateRequest;
 import nbcamp.food_order_platform.order.presentation.dto.request.OrderRejectRequest;
 import nbcamp.food_order_platform.order.presentation.dto.request.OrderSearchCondition;
@@ -24,34 +25,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-/**
- * 주문(Order) 도메인의 비즈니스 로직을 처리하는 서비스 클래스.
- *
- * <p>
- * 주요 기능:
- * </p>
- * <ul>
- * <li>주문 생성 (createOrder)</li>
- * <li>고객용 주문 단건 조회 (getOrderForCustomer)</li>
- * <li>관리자용 주문 단건 조회 (getOrderForAdmin)</li>
- * <li>고객용 주문 목록 조회 (getOrdersForCustomer)</li>
- * <li>관리자용 주문 목록 조회 (getOrdersForAdmin)</li>
- * <li>주문 전체 취소 (cancelOrder)</li>
- * <li>주문 상품 부분 취소 (cancelOrderItems)</li>
- * </ul>
- *
- * <p>
- * 모든 요청은 JWT 인증을 통해 전달된 사용자 정보(AuthUser)를 기반으로 처리됩니다.
- * </p>
- */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -102,12 +78,14 @@ public class OrderService {
     }
 
     // 가게 주문 상세 조회 (사장)
-    public OrderResponse getOrderOwner(UUID orderId) {
-        return toOrderResponse(findOrderById(orderId));
+    public OrderResponse getOrderOwner(UUID orderId, AuthUser authUser) {
+        Order order = findOrderById(orderId);
+        validateStorePermission(order.getStore().getId(), authUser.getUserId(), Role.valueOf(authUser.getRole()));
+        return toOrderResponse(order);
     }
 
     // 전체 주문 상세 조회 (관리자)
-    public OrderResponse getOrderAdmin(UUID orderId) {
+    public OrderResponse getOrderAdmin(UUID orderId, AuthUser authUser) {
         return toOrderResponse(findOrderById(orderId));
     }
 
@@ -125,7 +103,8 @@ public class OrderService {
                 
     // 가게 주문 페이징 검색 (사장)
     public Page<OrderSummaryResponse> searchOrdersOwner(UUID storeId, OrderSearchCondition condition,
-            Pageable pageable) {
+            Pageable pageable, AuthUser authUser) {
+        validateStorePermission(storeId, authUser.getUserId(), Role.valueOf(authUser.getRole()));
         return orderRepository.searchOwnerOrders(
                         storeId,
                         condition.status(),
@@ -135,7 +114,8 @@ public class OrderService {
                 .map(this::toOrderSummaryResponse);
     }
     // 전체 주문 페이징 검색 (관리자)
-    public Page<OrderSummaryResponse> searchOrdersAdmin(OrderSearchCondition condition, Pageable pageable) {
+    public Page<OrderSummaryResponse> searchOrdersAdmin(OrderSearchCondition condition, Pageable pageable,
+            AuthUser authUser) {
         return orderRepository
                 .searchAdminOrders(condition.status(), condition.startDate(), condition.endDate(), pageable)
                 .map(this::toOrderSummaryResponse);
@@ -153,21 +133,23 @@ public class OrderService {
 
     // 사장 주문 승인
     @Transactional
-    public void acceptOrderByOwner(UUID orderId) {
+    public void acceptOrderByOwner(UUID orderId, AuthUser authUser) {
         Order order = findOrderById(orderId);
+        validateStorePermission(order.getStore().getId(), authUser.getUserId(), Role.valueOf(authUser.getRole()));
         order.acceptByOwner();
     }
 
     // 사장 주문 거절 및 환불
     @Transactional
-    public void rejectOrderByOwner(UUID orderId, OrderRejectRequest request) {
+    public void rejectOrderByOwner(UUID orderId, OrderRejectRequest request, AuthUser authUser) {
         Order order = findOrderById(orderId);
+        validateStorePermission(order.getStore().getId(), authUser.getUserId(), Role.valueOf(authUser.getRole()));
         order.rejectByOwner();
     }
 
     // 관리자 주문 강제 취소
     @Transactional
-    public void cancelOrderByAdmin(UUID orderId) {
+    public void cancelOrderByAdmin(UUID orderId, AuthUser authUser) {
         Order order = findOrderById(orderId);
         order.cancelByAdmin();
     }
@@ -181,6 +163,19 @@ public class OrderService {
         if (!order.getUser().getUserId().equals(userId)) {
             throw new BusinessException(ErrorCode.NO_PERMISSION);
         }
+    }
+
+    public void validateStorePermission(UUID storeId, Long userId, Role role) { //가게 주인 확인
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_STORE));
+
+        if (role == Role.MANAGER || role == Role.MASTER)
+            return;
+
+        if (role == Role.OWNER && store.getOwnerId().equals(userId))
+            return;
+
+        throw new BusinessException(ErrorCode.NO_PERMISSION, "가게 권한이 없습니다.");
     }
     // --- DTO 매핑 ---
     private OrderResponse toOrderResponse(Order order) {

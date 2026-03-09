@@ -13,8 +13,12 @@ import nbcamp.food_order_platform.payment.presentation.dto.response.PaymentSumma
 import nbcamp.food_order_platform.payment.domain.entity.Payment;
 import nbcamp.food_order_platform.payment.domain.entity.PaymentStatus;
 import nbcamp.food_order_platform.payment.domain.repository.PaymentRepository;
+import nbcamp.food_order_platform.store.domain.entity.Store;
+import nbcamp.food_order_platform.store.domain.repository.StoreRepository;
+import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
+import nbcamp.food_order_platform.global.security.AuthUser;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,6 +34,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
+    private final StoreRepository storeRepository;
 
     // 결제 초기화 (READY 상태 생성)
     @Transactional
@@ -117,7 +122,8 @@ public class PaymentService {
 
     // 가게 결제 내역 페이징 검색 (사장용)
     public Page<PaymentSummaryResponse> searchPaymentsOwner(UUID storeId, PaymentSearchCondition condition,
-            Pageable pageable) {
+            Pageable pageable, AuthUser authUser) {
+        validateStorePermission(storeId, authUser.getUserId(), Role.valueOf(authUser.getRole()));
         return paymentRepository.searchOwnerPayments(
                         storeId,
                         condition.status(),
@@ -128,14 +134,15 @@ public class PaymentService {
     }
 
     // 가게 결제 단건 상세 조회 (사장용)
-    public PaymentResponse getPaymentOwner(UUID paymentId, UUID storeId) {
+    public PaymentResponse getPaymentOwner(UUID paymentId, UUID storeId, AuthUser authUser) {
+        validateStorePermission(storeId, authUser.getUserId(), Role.valueOf(authUser.getRole()));
         Payment payment = findPaymentById(paymentId);
-        // TODO: StoreId 유효성 체크 필요
         return toPaymentResponse(payment);
     }
 
     // 전체 결제 페이징 검색 (관리자용)
-    public Page<PaymentSummaryResponse> searchPaymentsAdmin(PaymentSearchCondition condition, Pageable pageable) {
+    public Page<PaymentSummaryResponse> searchPaymentsAdmin(PaymentSearchCondition condition, Pageable pageable,
+            AuthUser authUser) {
         return paymentRepository
                 .searchAdminPayments(
                         condition.status(),
@@ -146,7 +153,7 @@ public class PaymentService {
     }
 
     // 관리자 결제 상세 조회
-    public PaymentResponse getPaymentAdmin(UUID paymentId) {
+    public PaymentResponse getPaymentAdmin(UUID paymentId, AuthUser authUser) {
         return toPaymentResponse(findPaymentById(paymentId));
     }
 
@@ -160,6 +167,19 @@ public class PaymentService {
         if (!payment.getOrder().getUser().getUserId().equals(userId)) {
             throw new BusinessException(ErrorCode.NO_PERMISSION);
         }
+    }
+
+    public void validateStorePermission(UUID storeId, Long userId, Role role) { //가게 주인 확인
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_STORE));
+
+        if (role == Role.MANAGER || role == Role.MASTER)
+            return;
+
+        if (role == Role.OWNER && store.getOwnerId().equals(userId))
+            return;
+
+        throw new BusinessException(ErrorCode.NO_PERMISSION, "가게 권한이 없습니다.");
     }
 
     private PaymentResponse toPaymentResponse(Payment payment) {

@@ -49,7 +49,7 @@ public class PaymentController {
                 authUser.getUserId(),
                 condition,
                 pageable));
-}
+    }
 
     // 내 결제 취소 (고객)
     @PostMapping("/{paymentId}/cancel")
