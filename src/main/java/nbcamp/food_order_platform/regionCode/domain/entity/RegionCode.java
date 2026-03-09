@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import nbcamp.food_order_platform.global.common.BaseEntity;
 
 import java.util.UUID;
 
@@ -11,7 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "p_region_code")
-public class RegionCode {
+public class RegionCode extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
