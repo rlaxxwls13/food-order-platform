@@ -74,8 +74,8 @@ public class UserController {
         return new GetUserDetailResDto(
                 getUserDetailResult.userId(),
                 getUserDetailResult.username(),
-                getUserDetailResult.email(),
-                getUserDetailResult.role()
+                getUserDetailResult.role(),
+                getUserDetailResult.email()
         );
     }
 
