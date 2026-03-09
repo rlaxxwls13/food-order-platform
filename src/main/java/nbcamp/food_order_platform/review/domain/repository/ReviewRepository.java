@@ -5,6 +5,8 @@ import nbcamp.food_order_platform.review.domain.entity.ReviewStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -25,6 +27,16 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
     Slice<Review> findAllByUser_UserIdAndStatus(Long userId,ReviewStatus status,Pageable pageable);
     // 특정 유저가 작성한 리뷰 "전체" 조회 (MANAGER/MASTER)
     Slice<Review> findAllByUser_UserId(Long userId, Pageable pageable);
+
+    @Query("SELECT r FROM Review r WHERE r.store.id = :storeId " +
+            "AND r.status = :status " +
+            "AND (:rating IS NULL OR r.rating = :rating)")
+    Slice<Review> findAllByStoreIdAndStatusAndRating(
+            @Param("storeId") UUID storeId,
+            @Param("status") ReviewStatus status,
+            @Param("rating") Integer rating,
+            Pageable pageable
+    );
 
 
 }

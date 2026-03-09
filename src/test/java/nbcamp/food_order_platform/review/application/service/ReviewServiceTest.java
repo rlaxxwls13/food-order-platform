@@ -1,7 +1,5 @@
 package nbcamp.food_order_platform.review.application.service;
 
-import nbcamp.food_order_platform.global.error.ErrorCode;
-import nbcamp.food_order_platform.global.error.exception.BusinessException;
 import nbcamp.food_order_platform.global.security.JwtUtil;
 import nbcamp.food_order_platform.order.domain.entity.Order;
 import nbcamp.food_order_platform.order.domain.entity.OrderStatus;
@@ -37,7 +35,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -262,18 +259,22 @@ class ReviewServiceTest {
         void getReviewsByStore_customer() {
             // given
             Pageable pageable = PageRequest.of(0, 10);
+            Integer ratingFilter = null; // 필터가 없는 경우를 테스트하기 위해 null 설정
             Slice<Review> reviewSlice = new SliceImpl<>(List.of(visibleReview), pageable, false);
 
-            given(reviewRepository.findAllByStoreIdAndStatus(storeId, ReviewStatus.VISIBLE, pageable))
+            // 레포지토리 메서드 명 변경
+            given(reviewRepository.findAllByStoreIdAndStatusAndRating(eq(storeId), eq(ReviewStatus.VISIBLE), any(), eq(pageable)))
                     .willReturn(reviewSlice);
 
             // when
-            Slice<GetReviewCustomerResult> result = reviewService.getReviewsByStoreForCustomer(storeId, pageable);
+            // 호출시 두번째 파라미터에 rating
+            Slice<GetReviewCustomerResult> result = reviewService.getReviewsByStoreForCustomer(storeId, ratingFilter, pageable);
 
             // then
-            assertThat(result.getContent()).hasSize(1); // .getContent()로 접근!
+            assertThat(result.getContent()).hasSize(1);
             assertThat(result.hasNext()).isFalse();
-            verify(reviewRepository).findAllByStoreIdAndStatus(any(), any(), any());
+
+            verify(reviewRepository).findAllByStoreIdAndStatusAndRating(any(), any(), any(), any());
         }
 
         @Test

@@ -102,15 +102,15 @@ public class ReviewService {
         // 스토어 통계 업데이트 (삭제되는 리뷰의 별점 빼기)
         Store store = review.getStore();
         store.removeRating(review.getRating());
-
         review.softDelete(dto.getUserId());
     }
 
     // 4-1. 가게 리뷰 조회(CUSTOMER)
     @Transactional(readOnly = true)
-    public Slice<GetReviewCustomerResult> getReviewsByStoreForCustomer(UUID storeId, Pageable pageable) {
-        // DB에서 페이징된 엔티티 조회 (VISIBLE 상태만)
-        Slice<Review> reviews = reviewRepository.findAllByStoreIdAndStatus(storeId, ReviewStatus.VISIBLE, pageable);
+    public Slice<GetReviewCustomerResult> getReviewsByStoreForCustomer(UUID storeId,Integer rating,Pageable pageable) {
+        // DB에서 페이징된 엔티티 조회 (VISIBLE 상태, Rating별 조회 추가)
+        Slice<Review> reviews = reviewRepository.findAllByStoreIdAndStatusAndRating(
+                storeId, ReviewStatus.VISIBLE, rating, pageable);
         // .map()을 사용해 엔티티를 DTO로 변환
         return reviews.map(GetReviewCustomerResult::from);
     }

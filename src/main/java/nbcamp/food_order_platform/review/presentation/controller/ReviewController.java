@@ -8,11 +8,6 @@ import nbcamp.food_order_platform.review.application.service.ReviewService;
 import nbcamp.food_order_platform.review.presentation.dto.request.PatchReviewReqDto;
 import nbcamp.food_order_platform.review.presentation.dto.request.PatchReviewStatusReqDto;
 import nbcamp.food_order_platform.review.presentation.dto.request.PostReviewReqDto;
-import nbcamp.food_order_platform.review.application.dto.GetReviewCustomerResult;
-import nbcamp.food_order_platform.review.application.dto.GetReviewManagerResult;
-import nbcamp.food_order_platform.review.application.dto.UpdateReviewResult;
-import nbcamp.food_order_platform.review.application.dto.CreateReviewResult;
-
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;

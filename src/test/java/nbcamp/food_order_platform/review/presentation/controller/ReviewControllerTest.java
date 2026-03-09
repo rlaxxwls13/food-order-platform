@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -159,7 +160,7 @@ class ReviewControllerTest {
                 .build();
 
         Slice<GetReviewCustomerResult> sliceResponse = new SliceImpl<>(List.of(resultDto1, resultDto2));
-        given(reviewService.getReviewsByStoreForCustomer(any(UUID.class), any(Pageable.class)))
+        given(reviewService.getReviewsByStoreForCustomer(any(UUID.class), nullable(Integer.class), any(Pageable.class)))
                 .willReturn(sliceResponse);
 
         // when & then
