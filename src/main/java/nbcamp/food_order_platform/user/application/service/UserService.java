@@ -8,11 +8,11 @@ import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
 import nbcamp.food_order_platform.user.presentation.dto.SignupRequestDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -53,14 +53,20 @@ public class UserService {
         }
     }
 
-    public List<GetUsersResult> getUsers() {
-        List<User> users = userRepository.findAllByDeletedAtIsNull();
-        return users.stream()
+    public Page<GetUsersResult> getUsers(String username, Pageable pageable) {
+        Page<User> users;
+        if(username == null){
+            users = userRepository.findAllByDeletedAtIsNull(pageable);
+        }else{
+            users = userRepository
+                    .findByUsernameContainingAndDeletedAtIsNull(username, pageable);
+        }
+        return users
                 .map(user -> new GetUsersResult(
                         user.getUserId(),
-                        user.getUsername()
-                ))
-                .toList();
+                        user.getUsername(),
+                        user.getRole().name()
+                ));
     }
 
     public GetUserDetailResult getUser(Long userId) {
