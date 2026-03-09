@@ -71,14 +71,12 @@ public class AuthService {
 
     private User getUserByUsername(String username){
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("잘못된 아이디 입니다."));
-                //추후에 GlobalExceptionHandler ErrorCode로 변경
+                .orElseThrow(() -> new BusinessException(ErrorCode.SIGN_IN_FAIL));
     }
 
     private void validatePassword(String rawPassword, String encodePassword){
         if(!passwordEncoder.matches(rawPassword, encodePassword)) {
-            throw new IllegalArgumentException("비밀번호가 일지하지 않습니다.");
-            //추후에 GlobalExceptionHandler ErrorCode로 변경
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD);
         }
     }
 
@@ -91,8 +89,7 @@ public class AuthService {
         try {
             refreshClaims = jwtUtil.parseToken(refreshToken);
         } catch (ExpiredJwtException e) {
-            throw new BusinessException(ErrorCode.AUTHORIZATION);
-            //EXPIRED_TOKEN ErrorCode 추가
+            throw new BusinessException(ErrorCode.EXPIRED_TOKEN);
         } catch (JwtException | IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
@@ -101,8 +98,7 @@ public class AuthService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN));
 
         if(token.isExpired()){
-            throw new BusinessException(ErrorCode.INVALID_TOKEN);
-            //ErrorCode.EXPIRED_TOKEN 추가
+            throw new BusinessException(ErrorCode.EXPIRED_TOKEN);
         }
 
         String type = refreshClaims.get("type", String.class);

@@ -45,15 +45,13 @@ public class UserService {
 
     private void validateUsername(String username){
         if(userRepository.existsByUsername(username)){
-            throw new IllegalArgumentException("이미있는 사용자 입니다");
-            //추후에 GlobalExceptionHandler ErrorCode로 변경
+            throw new BusinessException(ErrorCode.DUPLICATED_USER_ID);
         }
     }
 
     private void validateEmail(String email){
         if(userRepository.existsByEmail(email)){
-            throw new IllegalArgumentException("이미 있는 이메일입니다.");
-            //추후에 GlobalExceptionHandler ErrorCode로 변경
+            throw new BusinessException(ErrorCode.DUPLICATED_EMAIL);
         }
     }
 
@@ -81,8 +79,7 @@ public class UserService {
         try{
             role = Role.valueOf(patchRoleCommand.role());
         }catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.NOT_EXISTED_USER);
-            //ErrorCode 추가 INVALID_ROLE
+            throw new BusinessException(ErrorCode.INVALID_ROLE);
         }
         user.updateRole(role);
     }
@@ -93,8 +90,7 @@ public class UserService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_USER));
 
         if(user.isDeleted()){
-            throw new BusinessException(ErrorCode.NOT_EXISTED_USER);
-            //ALREADY_DELETED_USER코드 추가
+            throw new BusinessException(ErrorCode.ALREADY_DELETED_USER);
         }
 
         user.softDelete(userId);

@@ -82,8 +82,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     request,
                     response,
                     null,
-                    new BusinessException(ErrorCode.AUTHORIZATION)
-                    //EXPIRED_TOKEN ErrorCode 추가
+                    new BusinessException(ErrorCode.EXPIRED_TOKEN)
             );
         }
         catch (JwtException | IllegalArgumentException e) {
