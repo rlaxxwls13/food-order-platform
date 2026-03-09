@@ -17,7 +17,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -95,9 +94,10 @@ public class ReviewController {
     @GetMapping("/reviews/stores/{storeId}")
     public ResponseEntity<Slice<GetReviewCustomerResult>> getStoreReviewsForCustomer(
             @PathVariable UUID storeId,
+            @RequestParam(required = false) Integer rating,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
-        return ResponseEntity.ok(reviewService.getReviewsByStoreForCustomer(storeId,pageable));
+        return ResponseEntity.ok(reviewService.getReviewsByStoreForCustomer(storeId,rating,pageable));
     }
     /**
      * 4-2. 가게별 리뷰 조회 (MANAGER용 - 전체 노출)
