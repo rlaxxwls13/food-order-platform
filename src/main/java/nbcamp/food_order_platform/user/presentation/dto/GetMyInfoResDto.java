@@ -1,8 +1,8 @@
 package nbcamp.food_order_platform.user.presentation.dto;
 
 public record GetMyInfoResDto(
-        Long userId,
-        String username,
+        String nickname,
+        String email,
         String role
 ) {
 }

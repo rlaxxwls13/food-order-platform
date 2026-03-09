@@ -3,6 +3,7 @@ package nbcamp.food_order_platform.user.application.service;
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
+import nbcamp.food_order_platform.user.application.dto.GetMyInfoResult;
 import nbcamp.food_order_platform.user.application.dto.GetUserDetailResult;
 import nbcamp.food_order_platform.user.application.dto.GetUsersResult;
 import nbcamp.food_order_platform.user.application.dto.PatchRoleCommand;
@@ -94,5 +95,13 @@ public class UserService {
         }
 
         user.softDelete(userId);
+    }
+
+    public GetMyInfoResult getInfo(Long userId) {
+        User user = userRepository.findAllByUserId(userId);
+        if(user == null){
+            throw new BusinessException(ErrorCode.NOT_EXISTED_USER);
+        }
+        return new GetMyInfoResult(user.getNickname(), user.getEmail(), user.getRole().name());
     }
 }

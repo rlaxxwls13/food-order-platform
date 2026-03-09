@@ -2,9 +2,7 @@ package nbcamp.food_order_platform.user.presentation.controller;
 
 import jakarta.validation.Valid;
 import nbcamp.food_order_platform.global.security.AuthUser;
-import nbcamp.food_order_platform.user.application.dto.GetUserDetailResult;
-import nbcamp.food_order_platform.user.application.dto.GetUsersResult;
-import nbcamp.food_order_platform.user.application.dto.PatchRoleCommand;
+import nbcamp.food_order_platform.user.application.dto.*;
 import nbcamp.food_order_platform.user.application.service.UserService;
 import nbcamp.food_order_platform.user.presentation.dto.*;
 import org.springframework.http.HttpStatus;
@@ -33,11 +31,9 @@ public class UserController {
     @GetMapping("/me")
     public GetMyInfoResDto getMyInfo(@AuthenticationPrincipal AuthUser authUser){
 
-        return new GetMyInfoResDto(
-                authUser.getUserId(),
-                authUser.getUsername(),
-                authUser.getRole()
-        );
+        GetMyInfoResult result = userService.getInfo(authUser.getUserId());
+
+        return new GetMyInfoResDto(result.nickname(), result.email(), result.role());
     }
 
     @GetMapping
