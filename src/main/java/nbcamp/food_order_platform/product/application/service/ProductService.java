@@ -29,6 +29,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final AiDescriptionService aiDescriptionService;
+    private final StoreRepository storeRepository;
     private final AiLogService aiLogService;
 
     @Transactional
