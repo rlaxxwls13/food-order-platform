@@ -18,6 +18,7 @@ import nbcamp.food_order_platform.store.domain.entity.Store;
 import nbcamp.food_order_platform.store.domain.entity.StoreCategory;
 import nbcamp.food_order_platform.store.domain.entity.StoreRegion;
 import nbcamp.food_order_platform.store.domain.repository.StoreRepository;
+import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -36,16 +37,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class StoreService {
 
-    private final UserRepository userRepository;
     private final StoreRepository storeRepository;
     private final RegionCodeRepository regionCodeRepository;
     private final CategoryRepository categoryRepository;
 
     @Transactional
-    public StoreResult createStore(Long userId, CreateStoreCommand dto) {
+    public StoreResult createStore(CreateStoreCommand dto, Long userId, Role role) {
         // 1) 입력 데이터 유효성 검증 및 권한 검증
-        userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_USER));
+        validateCreateStorePermission(role);
         RegionCode regionCode = regionCodeRepository.findById(dto.getRegionCode())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_STORE_REGION));
         List<UUID> categoryIds = dto.getCategoryIds() == null ? List.of() : dto.getCategoryIds();
@@ -94,9 +93,8 @@ public class StoreService {
     }
 
     @Transactional
-    public StoreResult updateStore(Long userId, UpdateStoreCommand command) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_USER));
+    public StoreResult updateStore(UpdateStoreCommand command, Long userId, Role role) {
+        validateStorePermission(command.getStoreId(), userId, role);
         Store store = storeRepository.findById(command.getStoreId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_STORE));
 
@@ -143,9 +141,8 @@ public class StoreService {
     }
 
     @Transactional
-    public StoreResult deleteStore(Long userId, UUID storeId) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_USER));
+    public StoreResult deleteStore(UUID storeId, Long userId, Role role) {
+        validateStorePermission(storeId, userId, role);
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_STORE));
         store.softDelete(userId);
@@ -154,7 +151,8 @@ public class StoreService {
     }
 
     @Transactional(readOnly = true)
-    public GetStoresAdminPageResult getAdminStores(GetStoresAdminPageQuery query, Pageable pageable) {
+    public GetStoresAdminPageResult getAdminStores(GetStoresAdminPageQuery query, Pageable pageable, Role role) {
+        validateAdminSearchStorePermission(role);
         if(!query.getIncludeDeleted()) {
             Page<Store> storePage = storeRepository.searchAdminStores(
                     query.getRegionCode(),
@@ -193,6 +191,33 @@ public class StoreService {
 
         Page<StoreResult> resultPage = new PageImpl<>(ordered, pageable, idPage.getTotalElements());
         return GetStoresAdminPageResult.from(resultPage);
+    }
+
+    public void validateAdminSearchStorePermission(Role role){ //가게 주인 확인
+        if (role == Role.MANAGER || role == Role.MASTER)
+            return;
+
+        throw new BusinessException(ErrorCode.NO_PERMISSION, "관리자가 아닙니다.");
+    }
+
+    public void validateCreateStorePermission(Role role){ //가게 주인 확인
+        if (role == Role.MANAGER || role == Role.MASTER || role == Role.OWNER)
+            return;
+
+        throw new BusinessException(ErrorCode.NO_PERMISSION, "가게 생성 권한이 없습니다.");
+    }
+
+    public void validateStorePermission(UUID storeId, Long userId, Role role){ //가게 주인 확인
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_STORE));
+
+        if (role == Role.MANAGER || role == Role.MASTER)
+            return;
+
+        if (role == Role.OWNER && store.getOwnerId().equals(userId))
+            return;
+
+        throw new BusinessException(ErrorCode.NO_PERMISSION, "가게 권한이 없습니다.");
     }
 
 }
