@@ -54,7 +54,7 @@ jobs:
           SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
           JWT_SECRET: dummy-ci-key
           GEMINI_API_KEY: dummy-ci-key
-        run: ./gradlew build --info 2>&1 | grep -A5 "PlaceholderResolution"
+        run: ./gradlew build
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
