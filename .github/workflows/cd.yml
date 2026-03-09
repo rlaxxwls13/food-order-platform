@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: CD
 
 on:
   push:
@@ -9,9 +9,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 코드 체크아웃
-      - name: Checkout code
-        uses: actions/checkout@v3
+      # Downloads a copy of the code in your repository before running CI tests
+      - name: Check out repository code
+        uses: actions/checkout@v4
 
       # 2. AWS 로그인
       - name: Configure AWS credentials
@@ -46,9 +46,16 @@ jobs:
           username: ubuntu
           key: ${{secrets.EC2_SSH_KEY}}
           script: |
+            cat > ~/food-order-platform/.env << EOF
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
+            ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY }}
+            EOF
             aws ecr get-login-password --region ${{secrets.AWS_REGION}} | docker login --username AWS --password-stdin ${{steps.login-ecr.outputs.registry}}
             cd ~/food-order-platform
-            docker pull ${{steps.login-ecr.outputs.registry}}/${{secrets.ECR_REPOSITORY}}:latest
+            git pull origin main
+            docker-compose pull
             docker-compose down
-            docker-compose up -d
-
+            docker-compose up -d --remove-orphans
