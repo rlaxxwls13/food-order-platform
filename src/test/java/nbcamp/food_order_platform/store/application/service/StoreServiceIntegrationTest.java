@@ -35,7 +35,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@ActiveProfiles("local")
+@ActiveProfiles("prod")
 @Transactional
 class StoreServiceIntegrationTest {
 
