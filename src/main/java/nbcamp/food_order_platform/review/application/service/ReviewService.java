@@ -67,9 +67,9 @@ public class ReviewService {
         // 본인 리뷰인지 확인 (에러:권한 없음)
         validateReviewOwner(review, dto.getUserId());
 
-        // 수정 기간 체크 : 리뷰 작성일이 아니라 '주문 생성일' 기준으로 변경
+        // 수정 기간 체크 3일 : 리뷰 작성일이 아니라 '주문 생성일' 기준으로 변경
         if (review.getOrder().getCreatedAt().plusDays(3).isBefore(LocalDateTime.now())) {
-            throw new BusinessException(ErrorCode.VALIDATION_FAILED);
+            throw new BusinessException(ErrorCode.REVIEW_PERIOD_EXPIRED);
         }
 
         // 스토어 통계 업데이트 (수정된 리뷰의 별점 계산)
@@ -158,12 +158,12 @@ public class ReviewService {
 
         // 4. 주문 완료 상태 확인
         if (order.getOrderStatus() != OrderStatus.COMPLETED) {
-            throw new BusinessException(ErrorCode.VALIDATION_FAILED);
+            throw new BusinessException(ErrorCode.ORDER_NOT_COMPLETED);
         }
 
         // 5. 3일 이내 확인
         if (order.getCreatedAt().plusDays(3).isBefore(LocalDateTime.now())) {
-            throw new BusinessException(ErrorCode.VALIDATION_FAILED);
+            throw new BusinessException(ErrorCode.REVIEW_PERIOD_EXPIRED);
         }
 
         // 6. 중복 리뷰 확인
