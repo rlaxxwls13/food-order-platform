@@ -3,10 +3,7 @@ package nbcamp.food_order_platform.user.application.service;
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
-import nbcamp.food_order_platform.user.application.dto.GetMyInfoResult;
-import nbcamp.food_order_platform.user.application.dto.GetUserDetailResult;
-import nbcamp.food_order_platform.user.application.dto.GetUsersResult;
-import nbcamp.food_order_platform.user.application.dto.PatchRoleCommand;
+import nbcamp.food_order_platform.user.application.dto.*;
 import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
@@ -103,5 +100,20 @@ public class UserService {
             throw new BusinessException(ErrorCode.NOT_EXISTED_USER);
         }
         return new GetMyInfoResult(user.getNickname(), user.getEmail(), user.getRole().name());
+    }
+    @Transactional
+    public void updateInfo(UpdateInfoCommand command) {
+
+        User user = userRepository.findById(command.userId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_USER));
+
+        if(command.dto().nickname() != null){
+            user.updateNickname(command.dto().nickname());
+        }
+
+        if(command.dto().password() != null){
+            String encodedPassword = passwordEncoder.encode(command.dto().password());
+            user.updatePassword(encodedPassword);
+        }
     }
 }

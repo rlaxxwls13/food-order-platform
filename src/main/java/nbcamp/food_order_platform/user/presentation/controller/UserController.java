@@ -36,6 +36,15 @@ public class UserController {
         return new GetMyInfoResDto(result.nickname(), result.email(), result.role());
     }
 
+    @PatchMapping("/me")
+    public void updateInfo(@AuthenticationPrincipal AuthUser authUser,
+                           @Valid @RequestBody PatchUserReqDto dto){
+
+        UpdateInfoCommand command = new UpdateInfoCommand(authUser.getUserId(), dto);
+
+        userService.updateInfo(command);
+    }
+
     @GetMapping
     @PreAuthorize("hasAnyRole('MASTER','MANAGER')")
     public List<GetUsersResDto> getUsers(){
