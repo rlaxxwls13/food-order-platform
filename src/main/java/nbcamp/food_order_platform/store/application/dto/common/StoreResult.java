@@ -18,7 +18,9 @@ public class StoreResult {
         return StoreResult.builder()
                 .store(store)
                 .storeRegion(storeRegion)
-                .storeCategories(storeCategories)
+                .storeCategories(storeCategories.stream()
+                        .filter(sc -> sc.getDeletedAt() == null)
+                        .toList())
                 .build();
     }
 }

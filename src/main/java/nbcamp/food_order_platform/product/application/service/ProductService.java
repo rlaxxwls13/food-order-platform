@@ -1,9 +1,12 @@
 package nbcamp.food_order_platform.product.application.service;
 
 import lombok.RequiredArgsConstructor;
+import nbcamp.food_order_platform.ai.application.dto.command.CreateAiDescriptionCommand;
+import nbcamp.food_order_platform.ai.application.service.AiDescriptionService;
+import nbcamp.food_order_platform.ai.application.service.AiLogService;
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
-import nbcamp.food_order_platform.product.application.dto.command.CreateProductCommand;
+import nbcamp.food_order_platform.product.application.dto.command.*;
 import nbcamp.food_order_platform.product.application.dto.command.UpdateProductCommand;
 import nbcamp.food_order_platform.product.application.dto.query.GetAdminProductsPageQuery;
 import nbcamp.food_order_platform.product.application.dto.query.GetProductsPageQuery;
@@ -25,7 +28,9 @@ import java.util.UUID;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final AiDescriptionService aiDescriptionService;
     private final StoreRepository storeRepository;
+    private final AiLogService aiLogService;
 
     @Transactional
     public CreateProductResult createProduct(CreateProductCommand productDto, Long userId, Role role) {
@@ -36,8 +41,9 @@ public class ProductService {
         useAi = false 입력한 설명 그대로 저장
          */
         String description = productDto.getDescription();
+        String original = description;
         if(productDto.isUseAi()){
-            description = "생성된 설명";
+            description = aiDescriptionService.generateAiDescription(original);
         }
 
         Product product = new Product(
@@ -50,8 +56,14 @@ public class ProductService {
 
         Product saved = productRepository.save(product);
 
-
-        //ai log 저장
+        if(productDto.isUseAi()){
+            CreateAiDescriptionCommand aiDto = new CreateAiDescriptionCommand(
+                    saved.getId(),
+                    original,
+                    description
+            );
+            aiLogService.createAiLog(aiDto);
+        }
 
         return new CreateProductResult(
                 saved.getId(),
@@ -73,21 +85,25 @@ public class ProductService {
         validateStorePermission(product.getStoreId(), userId, role);
 
         if(productDto.getName() != null) product.changeName(productDto.getName());
-
         if(productDto.getPrice() != null) product.changePrice(productDto.getPrice());
-
         if(productDto.getAddStockQuantity() != null) product.increaseStock(productDto.getAddStockQuantity());
-
         if(productDto.getSetStockQuantity() != null) product.changeQuantity(productDto.getSetStockQuantity());
 
         if(productDto.getDescription() != null) {
             String description = productDto.getDescription();
-            if(productDto.getUseAi())
-                description = "생성된 설명";
+            String original = description;
+            if(productDto.getUseAi()){
+                description = aiDescriptionService.generateAiDescription(original);
+
+                CreateAiDescriptionCommand aiDto = new CreateAiDescriptionCommand(
+                        productDto.getProductId(),
+                        original,
+                        description
+                );
+                aiLogService.createAiLog(aiDto);
+            }
             product.changeDescription(description);
         }
-
-        //ai로그저장
 
         return new UpdateProductResult(
                 product.getId(),

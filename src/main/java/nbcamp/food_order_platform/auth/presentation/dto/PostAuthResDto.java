@@ -10,4 +10,6 @@ import lombok.NoArgsConstructor;
 public class PostAuthResDto {
 
     private String accessToken;
+
+    private String refreshToken;
 }
