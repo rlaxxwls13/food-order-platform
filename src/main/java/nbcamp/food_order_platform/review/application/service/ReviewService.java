@@ -86,8 +86,22 @@ public class ReviewService {
     // 2-2. 리뷰 상태 변경 (MASTER,MANAGER)
     public UpdateReviewResult changeReviewStatus(UpdateReviewStatusCommand dto) {
         Review review = hasReview(dto.getReviewId());
+        ReviewStatus oldStatus = review.getStatus(); // 변경 전 상태
+        ReviewStatus newStatus = dto.getStatus();    // 변경 후 상태
+        Store store = review.getStore();
 
         // 엔티티의 updateStatus 메서드
+        if (oldStatus != newStatus) {
+            // VISIBLE -> HIDDEN  점수 깎기
+            if (oldStatus == ReviewStatus.VISIBLE && (newStatus == ReviewStatus.HIDDEN )) {
+                store.removeRating(review.getRating());
+            }
+            // HIDDEN -> VISIBLE : 다시 점수 더하기 (복구 시)
+            else if (oldStatus != ReviewStatus.VISIBLE && newStatus == ReviewStatus.VISIBLE) {
+                store.addNewRating(review.getRating());
+            }
+
+        }
         review.updateStatus(dto.getStatus());
         return UpdateReviewResult.from(review);
     }
@@ -102,6 +116,8 @@ public class ReviewService {
         // 스토어 통계 업데이트 (삭제되는 리뷰의 별점 빼기)
         Store store = review.getStore();
         store.removeRating(review.getRating());
+
+        review.updateStatus(ReviewStatus.DELETED);
         review.softDelete(dto.getUserId());
     }
 
