@@ -2,20 +2,21 @@ package nbcamp.food_order_platform.review.presentation.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import nbcamp.food_order_platform.global.security.AuthUser;
 import nbcamp.food_order_platform.review.application.dto.*;
 import nbcamp.food_order_platform.review.application.service.ReviewService;
 import nbcamp.food_order_platform.review.presentation.dto.request.PatchReviewReqDto;
 import nbcamp.food_order_platform.review.presentation.dto.request.PatchReviewStatusReqDto;
 import nbcamp.food_order_platform.review.presentation.dto.request.PostReviewReqDto;
-import nbcamp.food_order_platform.review.application.dto.GetReviewCustomerResult;
-import nbcamp.food_order_platform.review.application.dto.GetReviewManagerResult;
-import nbcamp.food_order_platform.review.application.dto.UpdateReviewResult;
-import nbcamp.food_order_platform.review.application.dto.CreateReviewResult;
-
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -28,15 +29,11 @@ public class ReviewController {
      */
     @PostMapping("/reviews")
     public ResponseEntity<CreateReviewResult> createReview(
-            @Valid @RequestBody PostReviewReqDto reqDto
-            // @AuthenticationPrincipal UserDetailsImpl userDetails // 나중에 시큐리티 붙으면 쓸 것!
+            @Valid @RequestBody PostReviewReqDto reqDto,
+            @AuthenticationPrincipal AuthUser authUser
     ) {
-        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
-        Long currentUserId = 1L;
 
-        /*  시큐리티 적용 시 아래 주석 해제 예정
-        Long currentUserId = userDetails.getUser().getId()
-        */
+        Long currentUserId = authUser.getUserId();
 
         // 1. 받은 reqDto와 시스템이 아는 userId를 합쳐서
         // 2. Service 로 보낼 CreateReviewDto 생성
@@ -50,15 +47,10 @@ public class ReviewController {
     @PatchMapping("/reviews/{reviewId}")
     public ResponseEntity<UpdateReviewResult> updateReview(
             @PathVariable UUID reviewId,
-            //@AuthenticationPrincipal UserDetailsImpl userDetails,
+            @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody PatchReviewReqDto reqDto) {
 
-        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
-        Long currentUserId = 1L;
-
-        /*  시큐리티 적용 시 아래 주석 해제 예정
-        Long currentUserId = userDetails.getUser().getId()
-        */
+        Long currentUserId = authUser.getUserId();
 
         // 1. 받은 reqDto와 시스템이 아는 userId를 합쳐서
         // 2. Service 로 보낼 UpdateReviewDto 생성
@@ -69,19 +61,14 @@ public class ReviewController {
     /**
      * 2-2. 리뷰 상태 변경 (숨김/노출) - MASTER, MANAGER 전용
      */
+    @PreAuthorize("hasAnyRole('MASTER', 'MANAGER')") // 추가: 실행 전 역할 확인
     @PatchMapping("/admin/reviews/{reviewId}/status")
     public ResponseEntity<UpdateReviewResult> changeReviewStatus(
             @PathVariable UUID reviewId,
-            //@AuthenticationPrincipal UserDetailsImpl userDetails,
+            @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody PatchReviewStatusReqDto dto) {
 
-        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
-        Long managerUserId = null; // 이상태로 하면 NPE터짐!
-
-        /*  시큐리티 적용 시 아래 주석 해제 예정
-        Long managerUser = userDetails.getUser().getUserId();
-        */
-        UpdateReviewStatusCommand serviceDto = UpdateReviewStatusCommand.of(reviewId,managerUserId,dto.getStatus());
+        UpdateReviewStatusCommand serviceDto = UpdateReviewStatusCommand.of(reviewId,authUser.getUserId(),dto.getStatus());
         return ResponseEntity.ok(reviewService.changeReviewStatus(serviceDto));
     }
     /**
@@ -89,15 +76,12 @@ public class ReviewController {
      */
     @DeleteMapping("/reviews/{reviewId}")
     public ResponseEntity<Void> deleteReview(
-            @PathVariable UUID reviewId
-            //,@AuthenticationPrincipal UserDetailsImpl userDetails
+            @PathVariable UUID reviewId,
+            @AuthenticationPrincipal AuthUser authUser
             ) {
-        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
-        Long currentUserId = 1L;
 
-        /*  시큐리티 적용 시 아래 주석 해제 예정
-        Long currentUserId = userDetails.getUser().getId();
-        */
+        Long currentUserId = authUser.getUserId();
+
         DeleteReviewCommand serviceDto = DeleteReviewCommand.of(reviewId, currentUserId);
         reviewService.deleteReview(serviceDto);
 
@@ -108,35 +92,49 @@ public class ReviewController {
      * 4-1. 가게별 리뷰 조회(CUSTOMER용 - VISIBLE만 노출)
      */
     @GetMapping("/reviews/stores/{storeId}")
-    public ResponseEntity<List<GetReviewCustomerResult>> getStoreReviewsForCustomer(
-            @PathVariable UUID storeId) {
-        return ResponseEntity.ok(reviewService.getReviewsByStoreForCustomer(storeId));
+    public ResponseEntity<Slice<GetReviewCustomerResult>> getStoreReviewsForCustomer(
+            @PathVariable UUID storeId,
+            @RequestParam(required = false) Integer rating,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        return ResponseEntity.ok(reviewService.getReviewsByStoreForCustomer(storeId,rating,pageable));
     }
     /**
      * 4-2. 가게별 리뷰 조회 (MANAGER용 - 전체 노출)
      */
+    @PreAuthorize("hasAnyRole('MASTER', 'MANAGER')") // 추가: 실행 전 역할 확인
     @GetMapping("/admin/reviews/stores/{storeId}")
-    public ResponseEntity<List<GetReviewManagerResult>> getStoreReviewsForManager(
-            @PathVariable UUID storeId
-            //,@AuthenticationPrincipal UserDetailsImpl userDetails
+    public ResponseEntity<Slice<GetReviewManagerResult>> getStoreReviewsForManager(
+            @PathVariable UUID storeId,
+            @AuthenticationPrincipal AuthUser authUser,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
             ) {
 
-        // [임시 코드] 시큐리티 적용 전까지는 하드코딩된 ID 사용
-        Long managerUserId = 1L; // 이상태로 하면 NPE터짐!
-
-        /*  시큐리티 적용 시 아래 주석 해제 예정
-        Long managerUserId = userDetails.getUser().userId;
-        */
-        GetReviewManagerQuery serviceDto = GetReviewManagerQuery.forManager(storeId,managerUserId);
+        GetReviewManagerQuery serviceDto = GetReviewManagerQuery.storeForManager(storeId,authUser.getUserId(),pageable);
         return ResponseEntity.ok(reviewService.getReviewsByStoreForManager(serviceDto));
     }
     /**
-     * 5. 특정 유저가 작성한 리뷰 목록 조회
+     * 5. 특정 유저가 작성한 리뷰 목록 조회(CUSTOMER - 전체 노출)
      */
     @GetMapping("/reviews/users/{userId}")
-    public ResponseEntity<List<GetReviewCustomerResult>> getUserReviews(
-            @PathVariable Long userId) {
-        return ResponseEntity.ok(reviewService.getReviewsByUser(userId));
+    public ResponseEntity<Slice<GetReviewCustomerResult>> getReviewsByUserForCustomer(
+            @PathVariable Long userId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        return ResponseEntity.ok(reviewService.getReviewsByUserForCustomer(userId,pageable));
+    }
+    /**
+     *  5-2. 특정 유저 리뷰 조회 (MANAGER용 - 전체 노출)
+     */
+    @PreAuthorize("hasAnyRole('MASTER', 'MANAGER')") // 추가: 실행 전 역할 확인
+    @GetMapping("/admin/reviews/users/{userId}")
+    public ResponseEntity<Slice<GetReviewManagerResult>> getUserReviewsForManager(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal AuthUser authUser,
+            @PageableDefault(size = 10) Pageable pageable) {
+
+        GetReviewManagerQuery serviceDto = GetReviewManagerQuery.userForManager(userId,authUser.getUserId(),pageable);
+        return ResponseEntity.ok(reviewService.getReviewsByUserForManager(serviceDto));
     }
 
 }

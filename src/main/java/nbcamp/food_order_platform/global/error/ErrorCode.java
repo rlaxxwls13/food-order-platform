@@ -11,6 +11,11 @@ public enum ErrorCode {
     INVALID_ROLE(HttpStatus.BAD_REQUEST, 4002, "Invalid role"), //잘못된 role요청
     ALREADY_DELETED_USER(HttpStatus.BAD_REQUEST, 4003, "User already deleted"), //이미 탈퇴한 사용자
 
+
+
+    REVIEW_PERIOD_EXPIRED(HttpStatus.BAD_REQUEST, 4004, "Review creation or modification period has expired"), // 리뷰 수정기간이 지남
+    ORDER_NOT_COMPLETED(HttpStatus.BAD_REQUEST, 4005, "Reviews can only be written for completed orders."), // 오더의 상태가 completed만 리뷰 작성 가능
+
     // 401
     SIGN_IN_FAIL(HttpStatus.UNAUTHORIZED, 4012, "Login information mismatch."), //로그인실패
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, 4013,"Invalid or expired token."), //토큰 서명오류/형식 오류
