@@ -1,7 +1,6 @@
 package nbcamp.food_order_platform.global.security;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
@@ -47,32 +46,7 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String extractUsername(String token){
-        return extractClaims(token).getSubject();
-    }
-
-    public Long extractUserId(String token){
-        return extractClaims(token).get("userId", Long.class);
-    }
-
-    public String extractRole(String token){
-        return extractClaims(token).get("role", String.class);
-    }
-
-    public String extractType(String token){
-        return extractClaims(token).get("type", String.class);
-    }
-
-    public boolean validateToken(String token){
-        try {
-            extractClaims(token);
-            return true;
-        }catch (JwtException | IllegalArgumentException e){
-            return false;
-        }
-    }
-
-    private Claims extractClaims(String token){
+    public Claims parseToken(String token){
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
