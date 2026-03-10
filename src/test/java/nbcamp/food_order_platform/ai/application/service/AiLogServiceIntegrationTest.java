@@ -4,6 +4,8 @@ import jakarta.persistence.EntityManager;
 import nbcamp.food_order_platform.ai.application.dto.command.CreateAiDescriptionCommand;
 import nbcamp.food_order_platform.ai.application.dto.command.UpdateAiDescriptionCommand;
 import nbcamp.food_order_platform.ai.application.dto.result.GetAiDescriptionLogsResult;
+import nbcamp.food_order_platform.ai.domain.entity.AiDescription;
+import nbcamp.food_order_platform.ai.domain.repository.AiDescriptionRepository;
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
 import nbcamp.food_order_platform.product.application.dto.command.CreateProductCommand;
@@ -43,6 +45,8 @@ class AiLogServiceIntegrationTest {
 
     @Autowired
     private EntityManager em;
+    @Autowired
+    private AiDescriptionRepository aiDescriptionRepository;
 
     @DisplayName("AI 로그 조회 성공 - OWNER가 본인 상품의 로그를 조회")
     @Test
@@ -221,10 +225,11 @@ class AiLogServiceIntegrationTest {
         flushAndClear();
 
         // then
-        GetAiDescriptionLogsResult result =
-                aiLogService.getAiDescriptionLogs(productId, pageable, ownerId, Role.OWNER);
+        AiDescription deletedLog =
+                aiDescriptionRepository.findById(aiLogId).orElseThrow();
 
-        assertThat(result.getLogs()).isEmpty();
+        assertThat(deletedLog.getDeletedAt()).isNotNull();
+        assertThat(deletedLog.getDeletedBy()).isEqualTo(ownerId);
     }
 
     @DisplayName("AI 로그 삭제 실패 - 권한 없음")
