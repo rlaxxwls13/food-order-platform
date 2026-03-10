@@ -1,8 +1,7 @@
 package nbcamp.food_order_platform.user.presentation.dto;
 
-public record GetMyInfoResDto(
+public record PatchUserReqDto(
         String nickname,
-        String email,
-        String role
+        String password
 ) {
 }

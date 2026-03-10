@@ -2,17 +2,17 @@ package nbcamp.food_order_platform.user.presentation.controller;
 
 import jakarta.validation.Valid;
 import nbcamp.food_order_platform.global.security.AuthUser;
-import nbcamp.food_order_platform.user.application.dto.GetUserDetailResult;
-import nbcamp.food_order_platform.user.application.dto.GetUsersResult;
-import nbcamp.food_order_platform.user.application.dto.PatchRoleCommand;
+import nbcamp.food_order_platform.user.application.dto.*;
 import nbcamp.food_order_platform.user.application.service.UserService;
 import nbcamp.food_order_platform.user.presentation.dto.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -33,23 +33,38 @@ public class UserController {
     @GetMapping("/me")
     public GetMyInfoResDto getMyInfo(@AuthenticationPrincipal AuthUser authUser){
 
-        return new GetMyInfoResDto(
-                authUser.getUserId(),
-                authUser.getUsername(),
-                authUser.getRole()
-        );
+        GetMyInfoResult result = userService.getInfo(authUser.getUserId());
+
+        return new GetMyInfoResDto(result.nickname(), result.email(), result.role());
+    }
+
+    @PatchMapping("/me")
+    public void updateInfo(@AuthenticationPrincipal AuthUser authUser,
+                           @Valid @RequestBody PatchUserReqDto dto){
+
+        UpdateInfoCommand command = new UpdateInfoCommand(authUser.getUserId(), dto);
+
+        userService.updateInfo(command);
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('MASTER','MANAGER')")
-    public List<GetUsersResDto> getUsers(){
-        List<GetUsersResult> getUsersResults = userService.getUsers();
+    public Page<GetUsersResDto> getUsers(
+            @RequestParam(required = false) String username,
+            @PageableDefault(
+                    sort = "createdAt",
+                    direction = Sort.Direction.DESC
+            )
+            Pageable pageable
+    ){
+        Page<GetUsersResult> getUsersResults = userService.getUsers(username, pageable);
 
-        return getUsersResults.stream()
+        return getUsersResults
                 .map(getUsersResult -> new GetUsersResDto(
                         getUsersResult.userId(),
-                        getUsersResult.username()
-                )).toList();
+                        getUsersResult.username(),
+                        getUsersResult.role()
+                ));
     }
 
     @GetMapping("/{userId}")
@@ -59,8 +74,8 @@ public class UserController {
         return new GetUserDetailResDto(
                 getUserDetailResult.userId(),
                 getUserDetailResult.username(),
-                getUserDetailResult.email(),
-                getUserDetailResult.role()
+                getUserDetailResult.role(),
+                getUserDetailResult.email()
         );
     }
 

@@ -3,18 +3,16 @@ package nbcamp.food_order_platform.user.application.service;
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
-import nbcamp.food_order_platform.user.application.dto.GetUserDetailResult;
-import nbcamp.food_order_platform.user.application.dto.GetUsersResult;
-import nbcamp.food_order_platform.user.application.dto.PatchRoleCommand;
+import nbcamp.food_order_platform.user.application.dto.*;
 import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
 import nbcamp.food_order_platform.user.presentation.dto.SignupRequestDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +27,7 @@ public class UserService {
 
         validateUsername(requestDto.getUsername());
         validateEmail(requestDto.getEmail());
+        validatePassword(requestDto.getPassword());
 
         String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
 
@@ -44,6 +43,15 @@ public class UserService {
     }
 
     private void validateUsername(String username){
+        if(username.length() < 4 || username.length() > 10 ){
+            throw new BusinessException(ErrorCode.AUTHORIZATION);
+            //ErrorCode INVALID_ID_LENGTH추가
+        }
+        if(username.matches("^[a-z0-9]{4,10}$")){
+            throw new BusinessException(ErrorCode.AUTHORIZATION);
+            //ErrorCode INVALID_ID_PATTERN추가
+        }
+
         if(userRepository.existsByUsername(username)){
             throw new BusinessException(ErrorCode.DUPLICATED_USER_ID);
         }
@@ -55,14 +63,32 @@ public class UserService {
         }
     }
 
-    public List<GetUsersResult> getUsers() {
-        List<User> users = userRepository.findAllByDeletedAtIsNull();
-        return users.stream()
+    private void validatePassword(String password){
+        if(password.length() < 8 || password.length() > 20){
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD);
+            //ErrorCode INVALID_PASSWORD_LENGTH추가
+        }
+
+        if(!password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*]).+$")){
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD);
+            //ErrorCode INVALID_PASSWORD_PATTERN추가
+        }
+    }
+
+    public Page<GetUsersResult> getUsers(String username, Pageable pageable) {
+        Page<User> users;
+        if(username == null){
+            users = userRepository.findAllByDeletedAtIsNull(pageable);
+        }else{
+            users = userRepository
+                    .findByUsernameContainingAndDeletedAtIsNull(username, pageable);
+        }
+        return users
                 .map(user -> new GetUsersResult(
                         user.getUserId(),
-                        user.getUsername()
-                ))
-                .toList();
+                        user.getUsername(),
+                        user.getRole().name()
+                ));
     }
 
     public GetUserDetailResult getUser(Long userId) {
@@ -94,5 +120,28 @@ public class UserService {
         }
 
         user.softDelete(userId);
+    }
+
+    public GetMyInfoResult getInfo(Long userId) {
+        User user = userRepository.findAllByUserId(userId);
+        if(user == null){
+            throw new BusinessException(ErrorCode.NOT_EXISTED_USER);
+        }
+        return new GetMyInfoResult(user.getNickname(), user.getEmail(), user.getRole().name());
+    }
+    @Transactional
+    public void updateInfo(UpdateInfoCommand command) {
+
+        User user = userRepository.findById(command.userId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_USER));
+
+        if(command.dto().nickname() != null){
+            user.updateNickname(command.dto().nickname());
+        }
+
+        if(command.dto().password() != null){
+            String encodedPassword = passwordEncoder.encode(command.dto().password());
+            user.updatePassword(encodedPassword);
+        }
     }
 }
