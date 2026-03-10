@@ -1,4 +1,4 @@
-package nbcamp.food_order_platform.store.application.dto.response;
+package nbcamp.food_order_platform.store.application.dto.result;
 
 import lombok.Builder;
 import lombok.Getter;
