@@ -5,8 +5,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface AiDescriptionRepository extends JpaRepository<AiDescription, UUID> {
     Page<AiDescription> findByProductId(UUID productId, Pageable pageable);
+    Optional<AiDescription> findTopByProductIdAndDeletedAtIsNullAndIdNotOrderByCreatedAtDesc(UUID id, UUID id1);
 }

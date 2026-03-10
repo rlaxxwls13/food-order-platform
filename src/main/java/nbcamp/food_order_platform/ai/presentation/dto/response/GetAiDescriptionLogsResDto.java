@@ -1,4 +1,4 @@
-package nbcamp.food_order_platform.ai.presentation.dto;
+package nbcamp.food_order_platform.ai.presentation.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
