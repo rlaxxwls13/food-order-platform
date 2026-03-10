@@ -10,5 +10,4 @@ import java.util.UUID;
 
 public interface AiDescriptionRepository extends JpaRepository<AiDescription, UUID> {
     Page<AiDescription> findByProductId(UUID productId, Pageable pageable);
-    Optional<AiDescription> findTopByProductIdAndDeletedAtIsNullAndIdNotOrderByCreatedAtDesc(UUID id, UUID id1);
 }
