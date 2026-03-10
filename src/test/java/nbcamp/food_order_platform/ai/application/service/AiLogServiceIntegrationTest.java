@@ -2,6 +2,7 @@ package nbcamp.food_order_platform.ai.application.service;
 
 import jakarta.persistence.EntityManager;
 import nbcamp.food_order_platform.ai.application.dto.command.CreateAiDescriptionCommand;
+import nbcamp.food_order_platform.ai.application.dto.command.UpdateAiDescriptionCommand;
 import nbcamp.food_order_platform.ai.application.dto.result.GetAiDescriptionLogsResult;
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
@@ -139,6 +140,126 @@ class AiLogServiceIntegrationTest {
         // when / then
         assertThatThrownBy(() ->
                 aiLogService.getAiDescriptionLogs(productId, pageable, otherOwnerId, Role.OWNER))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> {
+                    BusinessException be = (BusinessException) ex;
+                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.NO_PERMISSION);
+                });
+    }
+
+    @DisplayName("AI 설명 수정 성공")
+    @Test
+    void updateAiDescription_success() {
+        // given
+        long ownerId = 3005L;
+        seedUser(ownerId);
+
+        UUID storeId = UUID.randomUUID();
+        seedStore(storeId, ownerId, "수정가게");
+
+        UUID productId = createProduct(ownerId, storeId, "콜라", 10, 2000, "탄산음료");
+
+        aiLogService.createAiLog(new CreateAiDescriptionCommand(
+                productId,
+                "원본 설명",
+                "AI 설명"
+        ));
+        flushAndClear();
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        UUID aiLogId = aiLogService
+                .getAiDescriptionLogs(productId, pageable, ownerId, Role.OWNER)
+                .getLogs()
+                .get(0)
+                .getAiLogId();
+
+        UpdateAiDescriptionCommand command =
+                new UpdateAiDescriptionCommand(aiLogId, "수정된 AI 설명");
+
+        // when
+        aiLogService.updateAiDescription(command, ownerId, Role.OWNER);
+        flushAndClear();
+
+        // then
+        GetAiDescriptionLogsResult result =
+                aiLogService.getAiDescriptionLogs(productId, pageable, ownerId, Role.OWNER);
+
+        assertThat(result.getLogs().get(0).getResponseText())
+                .isEqualTo("수정된 AI 설명");
+    }
+
+    @DisplayName("AI 로그 삭제 성공")
+    @Test
+    void deleteAiDescription_success() {
+        // given
+        long ownerId = 3006L;
+        seedUser(ownerId);
+
+        UUID storeId = UUID.randomUUID();
+        seedStore(storeId, ownerId, "삭제가게");
+
+        UUID productId = createProduct(ownerId, storeId, "콜라", 10, 2000, "탄산음료");
+
+        aiLogService.createAiLog(new CreateAiDescriptionCommand(
+                productId,
+                "원본 설명",
+                "AI 설명"
+        ));
+        flushAndClear();
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        UUID aiLogId = aiLogService
+                .getAiDescriptionLogs(productId, pageable, ownerId, Role.OWNER)
+                .getLogs()
+                .get(0)
+                .getAiLogId();
+
+        // when
+        aiLogService.deleteAiDescription(aiLogId, ownerId, Role.OWNER);
+        flushAndClear();
+
+        // then
+        GetAiDescriptionLogsResult result =
+                aiLogService.getAiDescriptionLogs(productId, pageable, ownerId, Role.OWNER);
+
+        assertThat(result.getLogs()).isEmpty();
+    }
+
+    @DisplayName("AI 로그 삭제 실패 - 권한 없음")
+    @Test
+    void deleteAiDescription_fail_no_permission() {
+        // given
+        long realOwner = 3007L;
+        long otherOwner = 3008L;
+
+        seedUser(realOwner);
+        seedUser(otherOwner);
+
+        UUID storeId = UUID.randomUUID();
+        seedStore(storeId, realOwner, "사장가게");
+
+        UUID productId = createProduct(realOwner, storeId, "콜라", 10, 2000, "탄산");
+
+        aiLogService.createAiLog(new CreateAiDescriptionCommand(
+                productId,
+                "원본 설명",
+                "AI 설명"
+        ));
+        flushAndClear();
+
+        Pageable pageable = PageRequest.of(0, 10);
+
+        UUID aiLogId = aiLogService
+                .getAiDescriptionLogs(productId, pageable, realOwner, Role.OWNER)
+                .getLogs()
+                .get(0)
+                .getAiLogId();
+
+        // when / then
+        assertThatThrownBy(() ->
+                aiLogService.deleteAiDescription(aiLogId, otherOwner, Role.OWNER))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(ex -> {
                     BusinessException be = (BusinessException) ex;
