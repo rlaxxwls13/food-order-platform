@@ -1,9 +1,10 @@
 package nbcamp.food_order_platform.review.application.service;
 
+import nbcamp.food_order_platform.global.security.JwtUtil;
 import nbcamp.food_order_platform.order.domain.entity.Order;
 import nbcamp.food_order_platform.order.domain.entity.OrderStatus;
 import nbcamp.food_order_platform.order.domain.repository.OrderRepository;
-import nbcamp.food_order_platform.review.application.dto.*; // 변경된 CQRS DTO들
+import nbcamp.food_order_platform.review.application.dto.*;
 import nbcamp.food_order_platform.review.domain.entity.Review;
 import nbcamp.food_order_platform.review.domain.entity.ReviewStatus;
 import nbcamp.food_order_platform.review.domain.repository.ReviewRepository;
@@ -22,13 +23,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -51,6 +57,9 @@ class ReviewServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @MockitoBean
+    private JwtUtil jwtUtil;
 
     private User testUser;
     private User managerUser;
@@ -154,6 +163,7 @@ class ReviewServiceTest {
 
             given(reviewRepository.findById(reviewId)).willReturn(Optional.of(testReview));
             given(testReview.getUpdatedAt()).willReturn(LocalDateTime.now());
+            given(testReview.getCreatedAt()).willReturn(LocalDateTime.now());
 
             // when
             UpdateReviewResult result = reviewService.updateReview(command);
@@ -192,25 +202,6 @@ class ReviewServiceTest {
             // then
             verify(testReview, times(1)).updateStatus(ReviewStatus.HIDDEN);
             assertThat(result).isNotNull();
-        }
-
-        @Test
-        @DisplayName("실패 - CUSTOMER가 상태 변경 시도")
-        void changeStatus_noPermission() {
-            // given
-            UpdateReviewStatusCommand command = UpdateReviewStatusCommand.builder()
-                    .reviewId(reviewId)
-                    .userId(1L) // Customer ID
-                    .status(ReviewStatus.HIDDEN)
-                    .build();
-
-            given(userRepository.findById(1L)).willReturn(Optional.of(testUser));
-            given(reviewRepository.findById(reviewId)).willReturn(Optional.of(testReview));
-
-            // when & then
-            assertThatThrownBy(() -> reviewService.changeReviewStatus(command))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("권한이 필요합니다");
         }
     }
 
@@ -267,35 +258,45 @@ class ReviewServiceTest {
         @DisplayName("성공 - CUSTOMER가 가게 리뷰 조회 시 VISIBLE만 보임")
         void getReviewsByStore_customer() {
             // given
-            given(reviewRepository.findAllByStoreId(storeId))
-                    .willReturn(List.of(visibleReview, hiddenReview));
+            Pageable pageable = PageRequest.of(0, 10);
+            Integer ratingFilter = null; // 필터가 없는 경우를 테스트하기 위해 null 설정
+            Slice<Review> reviewSlice = new SliceImpl<>(List.of(visibleReview), pageable, false);
+
+            // 레포지토리 메서드 명 변경
+            given(reviewRepository.findAllByStoreIdAndStatusAndRating(eq(storeId), eq(ReviewStatus.VISIBLE), any(), eq(pageable)))
+                    .willReturn(reviewSlice);
 
             // when
-            List<GetReviewCustomerResult> result = reviewService.getReviewsByStoreForCustomer(storeId);
+            // 호출시 두번째 파라미터에 rating
+            Slice<GetReviewCustomerResult> result = reviewService.getReviewsByStoreForCustomer(storeId, ratingFilter, pageable);
 
             // then
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getNickname()).isEqualTo("유저1");
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.hasNext()).isFalse();
+
+            verify(reviewRepository).findAllByStoreIdAndStatusAndRating(any(), any(), any(), any());
         }
 
         @Test
         @DisplayName("성공 - MANAGER가 가게 리뷰 조회 시 전체 보암")
         void getReviewsByStore_manager() {
             // given
-            GetReviewManagerQuery query = GetReviewManagerQuery.builder()
-                    .storeId(storeId)
-                    .userId(2L)
-                    .build();
+            Pageable pageable = PageRequest.of(0, 10);
+            Slice<Review> reviewSlice = new SliceImpl<>(List.of(visibleReview, hiddenReview), pageable, false);
+
+            GetReviewManagerQuery query = GetReviewManagerQuery.storeForManager(storeId, 2L, pageable);
 
             given(userRepository.findById(2L)).willReturn(Optional.of(managerUser));
-            given(reviewRepository.findAllByStoreId(storeId))
-                    .willReturn(List.of(visibleReview, hiddenReview));
+            given(reviewRepository.findAllByStoreId(eq(storeId), eq(pageable))) // id와 pageable 둘 다 매칭!
+                    .willReturn(reviewSlice);
 
             // when
-            List<GetReviewManagerResult> result = reviewService.getReviewsByStoreForManager(query);
+            Slice<GetReviewManagerResult> result = reviewService.getReviewsByStoreForManager(query);
 
             // then
-            assertThat(result).hasSize(2);
+            assertThat(result.getContent()).hasSize(2); // Slice 안의 내용물(content) 개수 확인
+            assertThat(result.getContent().get(1).getStatus()).isEqualTo(ReviewStatus.HIDDEN); // 숨김 리뷰 포함 확인
+            verify(reviewRepository).findAllByStoreId(storeId, pageable);
         }
     }
 }

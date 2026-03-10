@@ -1,5 +1,8 @@
 package nbcamp.food_order_platform.global.security;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -46,13 +49,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             String token = header.substring(7);
 
-            if (!jwtUtil.validateToken(token)) {
+            Claims parseToken = jwtUtil.parseToken(token);
+
+            Long userId = parseToken.get("userId", Long.class);
+            String username = parseToken.getSubject();
+            String role = parseToken.get("role", String.class);
+            String type = parseToken.get("type", String.class);
+
+            if(!"access".equals(type)){
                 throw new BusinessException(ErrorCode.INVALID_TOKEN);
             }
-
-            Long userId = jwtUtil.extractUserId(token);
-            String username = jwtUtil.extractUsername(token);
-            String role = jwtUtil.extractRole(token);
 
             if (username != null &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -71,8 +77,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             filterChain.doFilter(request, response);
 
-        } catch (Exception e){
-           resolver.resolveException(request, response, null , e);
+        } catch (ExpiredJwtException e) {
+            resolver.resolveException(
+                    request,
+                    response,
+                    null,
+                    new BusinessException(ErrorCode.EXPIRED_TOKEN)
+            );
+        }
+        catch (JwtException | IllegalArgumentException e) {
+            resolver.resolveException(
+                    request,
+                    response,
+                    null,
+                    new BusinessException(ErrorCode.INVALID_TOKEN)
+            );
         }
     }
 }

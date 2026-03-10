@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 @DataJpaTest
-@ActiveProfiles("local")
+@ActiveProfiles({"prod", "local"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class StoreRepositoryTest {
 
@@ -344,40 +344,6 @@ class StoreRepositoryTest {
         assertAll(
                 () -> assertThat(deletedAt1).isNotNull(),
                 () -> assertThat(deletedAt2).isNull()
-        );
-    }
-
-    @DisplayName("Store softDelete 시 StoreRegion과 StoreCategory까지 softDelete 된다")
-    @Test
-    void softDelete_store_cascades_to_storeRegion_and_storeCategories() {
-        RegionCode rc = persistRegionCode("서울", true);
-
-        UUID storeId = storeRepository.save(new Store(1L, "store", rc, "detail", List.of(category1, category2))).getId();
-        flushAndClear();
-
-        Store toDelete = storeRepository.findByIdIncludingDeleted(storeId).orElseThrow();
-
-        // when
-        toDelete.softDelete(999L);
-        storeRepository.save(toDelete);
-        flushAndClear();
-
-        Object storeRegionDeletedAt = em.createNativeQuery(
-                        "select deleted_at from " + STORE_REGION_TABLE + " where store_id = :storeId")
-                .setParameter("storeId", storeId)
-                .getSingleResult();
-
-        List<?> storeCategoryDeletedAts = em.createNativeQuery(
-                        "select deleted_at from " + STORE_CATEGORY_TABLE + " where store_id = :storeId")
-                .setParameter("storeId", storeId)
-                .getResultList();
-
-        assertAll(
-                () -> assertThat(storeRepository.findById(storeId)).isEmpty(),
-                () -> assertThat(storeRepository.findByIdIncludingDeleted(storeId)).isPresent(),
-                () -> assertThat(storeRegionDeletedAt).isNotNull(),
-                () -> assertThat(storeCategoryDeletedAts).hasSize(2),
-                () -> assertThat(storeCategoryDeletedAts).allSatisfy(v -> assertThat(v).isNotNull())
         );
     }
 

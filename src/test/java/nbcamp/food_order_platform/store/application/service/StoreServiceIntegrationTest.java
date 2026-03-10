@@ -14,6 +14,7 @@ import nbcamp.food_order_platform.store.domain.entity.StoreRegion;
 import nbcamp.food_order_platform.store.domain.repository.StoreCategoryRepository;
 import nbcamp.food_order_platform.store.domain.repository.StoreRegionRepository;
 import nbcamp.food_order_platform.store.domain.repository.StoreRepository;
+import nbcamp.food_order_platform.user.domain.entity.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +35,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@ActiveProfiles("local")
+@ActiveProfiles({"prod", "local"})
 @Transactional
 class StoreServiceIntegrationTest {
 
@@ -79,7 +80,7 @@ class StoreServiceIntegrationTest {
         );
 
         // when
-        StoreResult result = storeService.createStore(userId, command);
+        StoreResult result = storeService.createStore(command, userId, Role.OWNER);
         flushAndClear();
 
         // then
@@ -166,7 +167,7 @@ class StoreServiceIntegrationTest {
         );
 
         // when
-        StoreResult result = storeService.updateStore(userId, command);
+        StoreResult result = storeService.updateStore(command, userId, Role.OWNER);
         flushAndClear();
 
         // then
@@ -196,8 +197,6 @@ class StoreServiceIntegrationTest {
                 Stream.of(category2, category3).sorted().toArray(UUID[]::new)
         );
 
-        // category1은 soft delete 되고, category3은 새로 추가되므로
-        // 실제 테이블 row는 총 3개여야 함
         assertThat(rawStoreCategoryRowCount).isEqualTo(3L);
     }
 
@@ -223,7 +222,7 @@ class StoreServiceIntegrationTest {
         );
 
         // when
-        StoreResult deleted = storeService.deleteStore(userId, storeId);
+        StoreResult deleted = storeService.deleteStore(storeId, userId, Role.OWNER);
         flushAndClear();
 
         // then
@@ -243,12 +242,14 @@ class StoreServiceIntegrationTest {
 
         GetStoresAdminPageResult adminWithoutDeleted = storeService.getAdminStores(
                 GetStoresAdminPageQuery.from(null, null, "삭제대상가게", false),
-                pageable
+                pageable,
+                Role.MANAGER
         );
 
         GetStoresAdminPageResult adminWithDeleted = storeService.getAdminStores(
                 GetStoresAdminPageQuery.from(null, null, "삭제대상가게", true),
-                pageable
+                pageable,
+                Role.MANAGER
         );
 
         assertThat(normalResult.getTotalElements()).isZero();
@@ -308,7 +309,7 @@ class StoreServiceIntegrationTest {
                 addressDetail,
                 categoryIds
         );
-        StoreResult result = storeService.createStore(userId, command);
+        StoreResult result = storeService.createStore(command, userId, Role.OWNER);
         flushAndClear();
         return result.getStore().getId();
     }
