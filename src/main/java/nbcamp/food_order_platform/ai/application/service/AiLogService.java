@@ -108,8 +108,8 @@ public class AiLogService {
         );
     }
 
-    //권한 확인
-    public void validateStorePermission(UUID storeId, Long userId, Role role){ //가게 주인 확인
+    //가게 권한 확인
+    public void validateStorePermission(UUID storeId, Long userId, Role role){
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_STORE));
 
