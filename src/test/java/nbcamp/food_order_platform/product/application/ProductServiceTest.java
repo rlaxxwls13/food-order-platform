@@ -1,16 +1,15 @@
 package nbcamp.food_order_platform.product.application;
 
+import nbcamp.food_order_platform.ai.application.dto.command.CreateAiDescriptionCommand;
+import nbcamp.food_order_platform.ai.application.service.AiDescriptionService;
+import nbcamp.food_order_platform.ai.application.service.AiLogService;
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
+import nbcamp.food_order_platform.product.application.dto.command.CreateProductCommand;
 import nbcamp.food_order_platform.product.application.dto.command.UpdateProductCommand;
 import nbcamp.food_order_platform.product.application.dto.query.GetAdminProductsPageQuery;
 import nbcamp.food_order_platform.product.application.dto.query.GetProductsPageQuery;
-import nbcamp.food_order_platform.product.application.dto.result.DeleteProductResult;
-import nbcamp.food_order_platform.product.application.dto.result.GetAdminProductsPageResult;
-import nbcamp.food_order_platform.product.application.dto.result.GetProductResult;
-import nbcamp.food_order_platform.product.application.dto.result.GetProductsPageResult;
-import nbcamp.food_order_platform.product.application.dto.result.UpdateProductHiddenResult;
-import nbcamp.food_order_platform.product.application.dto.result.UpdateProductResult;
+import nbcamp.food_order_platform.product.application.dto.result.*;
 import nbcamp.food_order_platform.product.application.service.ProductService;
 import nbcamp.food_order_platform.product.domain.entity.Product;
 import nbcamp.food_order_platform.product.domain.repository.ProductRepository;
@@ -44,6 +43,12 @@ class ProductServiceTest {
 
     @Mock
     private StoreRepository storeRepository;
+
+    @Mock
+    private AiDescriptionService aiDescriptionService;
+
+    @Mock
+    private AiLogService aiLogService;
 
     @InjectMocks
     private ProductService productService;
@@ -420,4 +425,113 @@ class ProductServiceTest {
         verify(productRepository).searchAdminProductsIncludingDeleted(storeId, "콜", true, pageable);
         verify(productRepository, never()).searchAdminProducts(any(), any(), anyBoolean(), any());
     }
+
+    @DisplayName("상품 생성 성공 - AI 미사용")
+    @Test
+    void createProduct_useAi_false() {
+        // given
+        Long userId = 1L;
+        UUID storeId = UUID.randomUUID();
+
+        CreateProductCommand command =
+                new CreateProductCommand(storeId, "콜라", 10, 2000, "탄산음료", false);
+
+        Store store = mock(Store.class);
+        Product product = mock(Product.class);
+
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(store.getOwnerId()).thenReturn(userId);
+
+        when(productRepository.save(any(Product.class))).thenReturn(product);
+
+        when(product.getId()).thenReturn(UUID.randomUUID());
+        when(product.getStoreId()).thenReturn(storeId);
+        when(product.getName()).thenReturn("콜라");
+        when(product.getQuantity()).thenReturn(10);
+        when(product.getPrice()).thenReturn(2000);
+        when(product.getDescription()).thenReturn("탄산음료");
+        when(product.isHidden()).thenReturn(false);
+        when(product.getCreatedAt()).thenReturn(LocalDateTime.now());
+
+        // when
+        CreateProductResult result =
+                productService.createProduct(command, userId, Role.OWNER);
+
+        // then
+        verify(aiDescriptionService, never()).generateAiDescription(any());
+        verify(aiLogService, never()).createAiLog(any());
+
+        assertThat(result.getName()).isEqualTo("콜라");
+        assertThat(result.getDescription()).isEqualTo("탄산음료");
+    }
+
+    @DisplayName("상품 생성 성공 - AI 설명 생성 및 로그 저장")
+    @Test
+    void createProduct_useAi_true() {
+        // given
+        Long userId = 1L;
+        UUID storeId = UUID.randomUUID();
+
+        CreateProductCommand command =
+                new CreateProductCommand(storeId, "콜라", 10, 2000, "탄산 콜라", true);
+
+        Store store = mock(Store.class);
+        Product product = mock(Product.class);
+
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(store.getOwnerId()).thenReturn(userId);
+
+        when(aiDescriptionService.generateAiDescription("탄산 콜라"))
+                .thenReturn("시원한 탄산 콜라입니다.");
+
+        when(productRepository.save(any(Product.class))).thenReturn(product);
+
+        when(product.getId()).thenReturn(UUID.randomUUID());
+        when(product.getStoreId()).thenReturn(storeId);
+        when(product.getName()).thenReturn("콜라");
+        when(product.getQuantity()).thenReturn(10);
+        when(product.getPrice()).thenReturn(2000);
+        when(product.getDescription()).thenReturn("시원한 탄산 콜라입니다.");
+        when(product.isHidden()).thenReturn(false);
+        when(product.getCreatedAt()).thenReturn(LocalDateTime.now());
+
+        // when
+        CreateProductResult result =
+                productService.createProduct(command, userId, Role.OWNER);
+
+        // then
+        verify(aiDescriptionService).generateAiDescription("탄산 콜라");
+        verify(aiLogService).createAiLog(any(CreateAiDescriptionCommand.class));
+
+        assertThat(result.getDescription()).isEqualTo("시원한 탄산 콜라입니다.");
+    }
+
+    @DisplayName("상품 생성 시 AI 실패하면 예외 발생")
+    @Test
+    void createProduct_useAi_fail() {
+        // given
+        Long userId = 1L;
+        UUID storeId = UUID.randomUUID();
+
+        CreateProductCommand command =
+                new CreateProductCommand(storeId, "콜라", 10, 2000, "탄산 콜라", true);
+
+        Store store = mock(Store.class);
+
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+        when(store.getOwnerId()).thenReturn(userId);
+
+        when(aiDescriptionService.generateAiDescription(any()))
+                .thenThrow(new BusinessException(ErrorCode.AI_GENERATION_FAILED));
+
+        // when / then
+        assertThatThrownBy(() ->
+                productService.createProduct(command, userId, Role.OWNER))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(ex -> {
+                    BusinessException be = (BusinessException) ex;
+                    assertThat(be.getErrorCode()).isEqualTo(ErrorCode.AI_GENERATION_FAILED);
+                });
+    }
 }
+
