@@ -2,12 +2,12 @@ package nbcamp.food_order_platform.store.application.service;
 
 import jakarta.persistence.EntityManager;
 import nbcamp.food_order_platform.store.application.dto.common.StoreResult;
-import nbcamp.food_order_platform.store.application.dto.request.CreateStoreCommand;
-import nbcamp.food_order_platform.store.application.dto.request.GetStoresAdminPageQuery;
-import nbcamp.food_order_platform.store.application.dto.request.GetStoresPageQuery;
-import nbcamp.food_order_platform.store.application.dto.request.UpdateStoreCommand;
-import nbcamp.food_order_platform.store.application.dto.response.GetStoresAdminPageResult;
-import nbcamp.food_order_platform.store.application.dto.response.GetStoresPageResult;
+import nbcamp.food_order_platform.store.application.dto.command.CreateStoreCommand;
+import nbcamp.food_order_platform.store.application.dto.query.GetStoresAdminPageQuery;
+import nbcamp.food_order_platform.store.application.dto.query.GetStoresPageQuery;
+import nbcamp.food_order_platform.store.application.dto.command.UpdateStoreCommand;
+import nbcamp.food_order_platform.store.application.dto.result.GetStoresAdminPageResult;
+import nbcamp.food_order_platform.store.application.dto.result.GetStoresPageResult;
 import nbcamp.food_order_platform.store.domain.entity.Store;
 import nbcamp.food_order_platform.store.domain.entity.StoreCategory;
 import nbcamp.food_order_platform.store.domain.entity.StoreRegion;

@@ -3,7 +3,7 @@ package nbcamp.food_order_platform.store.presentation.dto.response;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import nbcamp.food_order_platform.store.application.dto.response.GetStoresAdminPageResult;
+import nbcamp.food_order_platform.store.application.dto.result.GetStoresAdminPageResult;
 import nbcamp.food_order_platform.store.presentation.dto.common.StoreResDto;
 
 import java.util.List;
