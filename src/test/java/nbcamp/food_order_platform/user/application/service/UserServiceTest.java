@@ -29,7 +29,7 @@ class UserServiceTest {
     private UserService userService;
 
     @Test
-    void 회원가입_성공() {
+    void signup_success() {
 
         SignupRequestDto dto =
                 new SignupRequestDto(
@@ -54,7 +54,7 @@ class UserServiceTest {
     }
 
     @Test
-    void 회원가입_실패_아이디중복() {
+    void signup_failure_ID_Redundancy() {
 
         SignupRequestDto dto =
                 new SignupRequestDto(
@@ -74,7 +74,7 @@ class UserServiceTest {
     }
 
     @Test
-    void 회원가입_실패_이메일중복() {
+    void signUp_Failure_email_redundancy() {
 
         SignupRequestDto dto =
                 new SignupRequestDto(
