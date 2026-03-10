@@ -1,9 +1,11 @@
 package nbcamp.food_order_platform.global.error;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 @Getter
+@AllArgsConstructor
 public enum ErrorCode {
 
     //400
@@ -11,10 +13,9 @@ public enum ErrorCode {
     INVALID_ROLE(HttpStatus.BAD_REQUEST, 4002, "Invalid role"), //잘못된 role요청
     ALREADY_DELETED_USER(HttpStatus.BAD_REQUEST, 4003, "User already deleted"), //이미 탈퇴한 사용자
 
-
-
     REVIEW_PERIOD_EXPIRED(HttpStatus.BAD_REQUEST, 4004, "Review creation or modification period has expired"), // 리뷰 수정기간이 지남
     ORDER_NOT_COMPLETED(HttpStatus.BAD_REQUEST, 4005, "Reviews can only be written for completed orders."), // 오더의 상태가 completed만 리뷰 작성 가능
+    INVALID_PASSWORD_LENGTH(HttpStatus.BAD_REQUEST, 4006, "Password length must be between 8 and 20 characters."),//패스워드는 8~20자 사이여야 합니다.
 
     // 401
     SIGN_IN_FAIL(HttpStatus.UNAUTHORIZED, 4012, "Login information mismatch."), //로그인실패
@@ -54,13 +55,4 @@ public enum ErrorCode {
     private final Integer code;
     private final String message;
 
-    ErrorCode(HttpStatus httpStatus, Integer code, String message) {
-        this.httpStatus = httpStatus;
-        this.code = code;
-        this.message = message;
-    }
-
-    public HttpStatus getHttpStatus() { return httpStatus; }
-    public Integer getCode() { return code; }
-    public String getMessage() { return message; }
 }
