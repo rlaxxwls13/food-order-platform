@@ -10,6 +10,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class DeleteAiDescriptionLogResult {
     private UUID aiLogId;
-    private LocalDateTime deleteTime;
+    private LocalDateTime deletedAt;
     private Long deletedBy;
 }

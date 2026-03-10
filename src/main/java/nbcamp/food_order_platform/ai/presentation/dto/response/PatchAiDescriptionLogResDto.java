@@ -16,7 +16,7 @@ public class PatchAiDescriptionLogResDto {
     public PatchAiDescriptionLogResDto(UpdateAiDescriptionResult result) {
         this.aiLogId = result.getAiLogId();
         this.requestText = result.getRequestText();
-        this.responseText = result.getDescription();
+        this.responseText = result.getResponseText();
         this.updatedAt = result.getUpdatedAt();
     }
 }
