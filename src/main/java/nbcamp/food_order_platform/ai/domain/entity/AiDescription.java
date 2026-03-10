@@ -34,4 +34,12 @@ public class AiDescription extends BaseEntity {
         this.responseText = responseText;
 
     }
+
+    public void changeDescription(String description) {
+        if (description == null || description.isBlank())
+            throw new IllegalArgumentException("description은 필수입니다.");
+        if (description.length() > 100)
+            throw new IllegalArgumentException("description은 100자 이하여야 합니다.");
+        this.responseText = description;
+    }
 }
