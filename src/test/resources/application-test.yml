@@ -17,6 +17,9 @@ spring:
   sql:
     init:
       mode: never
+  test:
+    database:
+      replace: none
 
 # JwtUtil decodes this as Base64 and uses it as an HMAC key (HS256 requires >= 256-bit key).
 jwt:
