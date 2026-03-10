@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    # Many tests explicitly use `@ActiveProfiles("test")`.
+    # CI provides a Postgres service and injects datasource env vars, so mirror that here.
+    # Defaults are provided so local runs can still boot without CI secrets.
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/food_order}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:create-drop}
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+  sql:
+    init:
+      mode: never
+
+# JwtUtil decodes this as Base64 and uses it as an HMAC key (HS256 requires >= 256-bit key).
+jwt:
+  secret: ${JWT_SECRET:dGVzdC1zZWNyZXQtdGVzdC1zZWNyZXQtdGVzdC1zZWNyZXQtdGVzdC1zZWNyZXQ=}
+
+# Some beans use @Value("${ai.gemini.*}") and will fail context boot if missing.
+ai:
+  gemini:
+    api-key: ${GEMINI_API_KEY:test-api-key}
+    base-url: ${AI_GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta/models}
+    model: ${AI_GEMINI_MODEL:gemini-2.5-flash-lite}
