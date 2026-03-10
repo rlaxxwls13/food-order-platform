@@ -3,6 +3,8 @@ package nbcamp.food_order_platform.payment.presentation.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.global.security.AuthUser;
+import nbcamp.food_order_platform.payment.application.dto.command.PaymentCreateCommand;
+import nbcamp.food_order_platform.payment.application.dto.query.PaymentSearchQuery;
 import nbcamp.food_order_platform.payment.application.service.PaymentService;
 import nbcamp.food_order_platform.payment.presentation.dto.request.PaymentCreateRequest;
 import nbcamp.food_order_platform.payment.presentation.dto.request.PaymentSearchCondition;
@@ -28,7 +30,14 @@ public class PaymentController {
     public ResponseEntity<PaymentResponse> initiatePayment(
             @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody PaymentCreateRequest request) {
-        return ResponseEntity.ok(paymentService.initiatePayment(request, authUser.getUserId()));
+        PaymentCreateCommand command = new PaymentCreateCommand(
+                request.orderId(),
+                request.method(),
+                request.amount(),
+                authUser.getUserId()
+        );
+
+        return ResponseEntity.ok(PaymentResponse.from(paymentService.initiatePayment(command, authUser)));
     }
 
     // 결제 상세 조회 (고객)
@@ -36,7 +45,7 @@ public class PaymentController {
     public ResponseEntity<PaymentResponse> getPayment(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable UUID paymentId) {
-        return ResponseEntity.ok(paymentService.getPaymentCustomer(paymentId, authUser.getUserId()));
+        return ResponseEntity.ok(PaymentResponse.from(paymentService.getPaymentCustomer(paymentId, authUser)));
     }
 
     // 내 결제 페이징 검색 (고객)
@@ -45,10 +54,9 @@ public class PaymentController {
             @AuthenticationPrincipal AuthUser authUser,
             PaymentSearchCondition condition,
             Pageable pageable) {
-        return ResponseEntity.ok(paymentService.searchPaymentsCustomer(
-                authUser.getUserId(),
-                condition,
-                pageable));
+        PaymentSearchQuery query = new PaymentSearchQuery(condition.status(), condition.startDate(), condition.endDate());
+        return ResponseEntity.ok(paymentService.searchPaymentsCustomer(authUser, query, pageable)
+                .map(PaymentSummaryResponse::from));
     }
 
     // 내 결제 취소 (고객)
@@ -56,7 +64,7 @@ public class PaymentController {
     public ResponseEntity<Void> cancelPayment(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable UUID paymentId) {
-        paymentService.cancelPayment(paymentId, authUser.getUserId());
+        paymentService.cancelPayment(paymentId, authUser);
         return ResponseEntity.ok().build();
     }
 }

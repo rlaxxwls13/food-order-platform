@@ -2,15 +2,16 @@ package nbcamp.food_order_platform.payment.application.service;
 
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
+import nbcamp.food_order_platform.global.security.AuthUser;
 import nbcamp.food_order_platform.order.domain.entity.Order;
 import nbcamp.food_order_platform.order.domain.entity.OrderStatus;
 import nbcamp.food_order_platform.order.domain.repository.OrderRepository;
+import nbcamp.food_order_platform.payment.application.dto.command.PaymentCreateCommand;
+import nbcamp.food_order_platform.payment.application.dto.result.PaymentResult;
 import nbcamp.food_order_platform.payment.domain.entity.Payment;
 import nbcamp.food_order_platform.payment.domain.entity.PaymentMethod;
 import nbcamp.food_order_platform.payment.domain.entity.PaymentStatus;
 import nbcamp.food_order_platform.payment.domain.repository.PaymentRepository;
-import nbcamp.food_order_platform.payment.presentation.dto.request.PaymentCreateRequest;
-import nbcamp.food_order_platform.payment.presentation.dto.response.PaymentResponse;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -47,10 +48,11 @@ class PaymentServiceTest {
         // given
         Long userId = 1L;
         UUID orderId = UUID.randomUUID();
-        PaymentCreateRequest request = new PaymentCreateRequest(orderId, 10000L, PaymentMethod.CARD);
+        PaymentCreateCommand command = new PaymentCreateCommand(orderId, PaymentMethod.CARD, 10000L, userId);
 
         User user = mock(User.class);
         when(user.getUserId()).thenReturn(userId);
+        when(user.getUsername()).thenReturn("user" + userId);
 
         Order order = mock(Order.class);
         when(order.getUser()).thenReturn(user);
@@ -65,15 +67,20 @@ class PaymentServiceTest {
         when(payment.getOrder()).thenReturn(order);
         when(payment.getTotalAmount()).thenReturn(10000L);
         when(payment.getPaymentStatus()).thenReturn(PaymentStatus.READY);
+        when(payment.getPaymentMethod()).thenReturn(PaymentMethod.CARD);
 
         when(paymentRepository.save(any(Payment.class))).thenReturn(payment);
 
+        AuthUser authUser = mock(AuthUser.class);
+        when(authUser.getUserId()).thenReturn(userId);
+        when(authUser.getRole()).thenReturn("CUSTOMER");
+
         // when
-        PaymentResponse response = paymentService.initiatePayment(request, userId);
+        PaymentResult response = paymentService.initiatePayment(command, authUser);
 
         // then
         verify(paymentRepository).save(any(Payment.class));
-        assertThat(response.paymentStatus()).isEqualTo(PaymentStatus.READY);
+        assertThat(response.status()).isEqualTo(PaymentStatus.READY);
     }
 
     @Test
@@ -82,7 +89,7 @@ class PaymentServiceTest {
         // given
         Long userId = 1L;
         UUID orderId = UUID.randomUUID();
-        PaymentCreateRequest request = new PaymentCreateRequest(orderId, 10000L, PaymentMethod.CARD);
+        PaymentCreateCommand command = new PaymentCreateCommand(orderId, PaymentMethod.CARD, 10000L, userId);
 
         User user = mock(User.class);
         when(user.getUserId()).thenReturn(userId);
@@ -95,7 +102,11 @@ class PaymentServiceTest {
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 
         // when & then
-        assertThatThrownBy(() -> paymentService.initiatePayment(request, userId))
+        AuthUser authUser = mock(AuthUser.class);
+        when(authUser.getUserId()).thenReturn(userId);
+        when(authUser.getRole()).thenReturn("CUSTOMER");
+
+        assertThatThrownBy(() -> paymentService.initiatePayment(command, authUser))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("결제 가능한 주문 상태가 아닙니다.");
     }
@@ -121,8 +132,12 @@ class PaymentServiceTest {
 
         when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(payment));
 
+        AuthUser authUser = mock(AuthUser.class);
+        when(authUser.getUserId()).thenReturn(userId);
+        when(authUser.getRole()).thenReturn("CUSTOMER");
+
         // when
-        paymentService.completePayment(paymentId, userId);
+        paymentService.completePayment(paymentId, authUser);
 
         // then
         verify(payment).complete();
@@ -149,8 +164,12 @@ class PaymentServiceTest {
 
         when(paymentRepository.findById(paymentId)).thenReturn(Optional.of(payment));
 
+        AuthUser authUser = mock(AuthUser.class);
+        when(authUser.getUserId()).thenReturn(userId);
+        when(authUser.getRole()).thenReturn("CUSTOMER");
+
         // when
-        paymentService.cancelPayment(paymentId, userId);
+        paymentService.cancelPayment(paymentId, authUser);
 
         // then
         verify(payment).cancel();

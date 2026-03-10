@@ -1,18 +1,19 @@
 package nbcamp.food_order_platform.payment.application;
 
 import jakarta.persistence.EntityManager;
+import nbcamp.food_order_platform.global.security.AuthUser;
 import nbcamp.food_order_platform.order.domain.entity.Order;
 import nbcamp.food_order_platform.order.domain.entity.OrderStatus;
 import nbcamp.food_order_platform.order.domain.repository.OrderRepository;
+import nbcamp.food_order_platform.payment.application.dto.command.PaymentCreateCommand;
+import nbcamp.food_order_platform.payment.application.dto.query.PaymentSearchQuery;
+import nbcamp.food_order_platform.payment.application.dto.result.PaymentResult;
+import nbcamp.food_order_platform.payment.application.dto.result.PaymentSummaryResult;
 import nbcamp.food_order_platform.payment.application.service.PaymentService;
 import nbcamp.food_order_platform.payment.domain.entity.Payment;
 import nbcamp.food_order_platform.payment.domain.entity.PaymentMethod;
 import nbcamp.food_order_platform.payment.domain.entity.PaymentStatus;
 import nbcamp.food_order_platform.payment.domain.repository.PaymentRepository;
-import nbcamp.food_order_platform.payment.presentation.dto.request.PaymentCreateRequest;
-import nbcamp.food_order_platform.payment.presentation.dto.request.PaymentSearchCondition;
-import nbcamp.food_order_platform.payment.presentation.dto.response.PaymentResponse;
-import nbcamp.food_order_platform.payment.presentation.dto.response.PaymentSummaryResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,9 +62,10 @@ class PaymentServiceIntegrationTest {
         seedStore(storeId, userId, "결제가게");
         seedOrder(orderId, userId, storeId, OrderStatus.CREATED, 10000L);
 
-        PaymentResponse response = paymentService.initiatePayment(
-                new PaymentCreateRequest(orderId, 10000L, PaymentMethod.CARD),
-                userId
+        AuthUser authUser = new AuthUser(userId, "user" + userId, "CUSTOMER");
+        PaymentResult response = paymentService.initiatePayment(
+                new PaymentCreateCommand(orderId, PaymentMethod.CARD, 10000L, userId),
+                authUser
         );
         flushAndClear();
 
@@ -85,12 +87,13 @@ class PaymentServiceIntegrationTest {
         seedStore(storeId, userId, "취소가게");
         seedOrder(orderId, userId, storeId, OrderStatus.CREATED, 12000L);
 
-        PaymentResponse response = paymentService.initiatePayment(
-                new PaymentCreateRequest(orderId, 12000L, PaymentMethod.CARD),
-                userId
+        AuthUser authUser = new AuthUser(userId, "user" + userId, "CUSTOMER");
+        PaymentResult response = paymentService.initiatePayment(
+                new PaymentCreateCommand(orderId, PaymentMethod.CARD, 12000L, userId),
+                authUser
         );
 
-        paymentService.cancelPayment(response.paymentId(), userId);
+        paymentService.cancelPayment(response.paymentId(), authUser);
         flushAndClear();
 
         Payment saved = paymentRepository.findById(response.paymentId()).orElseThrow();
@@ -114,27 +117,28 @@ class PaymentServiceIntegrationTest {
         seedOrder(orderId1, userId, storeId, OrderStatus.CREATED, 8000L);
         seedOrder(orderId2, userId, storeId, OrderStatus.CREATED, 9000L);
 
-        PaymentResponse payment1 = paymentService.initiatePayment(
-                new PaymentCreateRequest(orderId1, 8000L, PaymentMethod.CARD),
-                userId
+        AuthUser authUser = new AuthUser(userId, "user" + userId, "CUSTOMER");
+        PaymentResult payment1 = paymentService.initiatePayment(
+                new PaymentCreateCommand(orderId1, PaymentMethod.CARD, 8000L, userId),
+                authUser
         );
-        PaymentResponse payment2 = paymentService.initiatePayment(
-                new PaymentCreateRequest(orderId2, 9000L, PaymentMethod.CARD),
-                userId
+        PaymentResult payment2 = paymentService.initiatePayment(
+                new PaymentCreateCommand(orderId2, PaymentMethod.CARD, 9000L, userId),
+                authUser
         );
 
-        paymentService.completePayment(payment2.paymentId(), userId);
+        paymentService.completePayment(payment2.paymentId(), authUser);
         flushAndClear();
 
-        Page<PaymentSummaryResponse> result = paymentService.searchPaymentsCustomer(
-                userId,
-                new PaymentSearchCondition(PaymentStatus.READY, null, null),
+        Page<PaymentSummaryResult> result = paymentService.searchPaymentsCustomer(
+                authUser,
+                new PaymentSearchQuery(PaymentStatus.READY, null, null),
                 PageRequest.of(0, 10)
         );
 
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent().get(0).paymentId()).isEqualTo(payment1.paymentId());
-        assertThat(result.getContent().get(0).paymentStatus()).isEqualTo(PaymentStatus.READY);
+        assertThat(result.getContent().get(0).status()).isEqualTo(PaymentStatus.READY);
     }
 
     private void seedUser(Long userId) {

@@ -1,16 +1,18 @@
 package nbcamp.food_order_platform.payment.presentation.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import nbcamp.food_order_platform.global.security.AuthUser;
 import nbcamp.food_order_platform.global.security.JwtUtil;
+import nbcamp.food_order_platform.payment.application.dto.command.PaymentCreateCommand;
+import nbcamp.food_order_platform.payment.application.dto.result.PaymentResult;
 import nbcamp.food_order_platform.payment.application.service.PaymentService;
 import nbcamp.food_order_platform.payment.domain.entity.PaymentMethod;
 import nbcamp.food_order_platform.payment.domain.entity.PaymentStatus;
 import nbcamp.food_order_platform.payment.presentation.dto.request.PaymentCreateRequest;
-import nbcamp.food_order_platform.payment.presentation.dto.response.PaymentResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -21,6 +23,8 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -28,9 +32,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
-        controllers = PaymentController.class,
-        excludeAutoConfiguration = SecurityAutoConfiguration.class
+        controllers = PaymentController.class
 )
+@AutoConfigureMockMvc
 class PaymentControllerTest {
 
     @Autowired
@@ -53,17 +57,21 @@ class PaymentControllerTest {
         UUID orderId = UUID.randomUUID();
         PaymentCreateRequest request = new PaymentCreateRequest(orderId, 10000L, PaymentMethod.CARD);
 
-        PaymentResponse response = new PaymentResponse(
-                UUID.randomUUID(),
-                orderId,
-                10000L,
-                PaymentStatus.READY,
-                LocalDateTime.now());
+        PaymentResult result = PaymentResult.builder()
+                .paymentId(UUID.randomUUID())
+                .orderId(orderId)
+                .amount(10000L)
+                .status(PaymentStatus.READY)
+                .method(PaymentMethod.CARD)
+                .createdAt(LocalDateTime.now())
+                .build();
 
-        given(paymentService.initiatePayment(any(PaymentCreateRequest.class), any())).willReturn(response);
+        given(paymentService.initiatePayment(any(PaymentCreateCommand.class), any())).willReturn(result);
 
         // when & then
         mockMvc.perform(post("/api/v1/payments")
+                        .with(user(new AuthUser(1L, "user1", "CUSTOMER")))
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andDo(print())
@@ -79,17 +87,20 @@ class PaymentControllerTest {
         // given
         UUID paymentId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
-        PaymentResponse response = new PaymentResponse(
-                paymentId,
-                orderId,
-                10000L,
-                PaymentStatus.COMPLETED,
-                LocalDateTime.now());
+        PaymentResult result = PaymentResult.builder()
+                .paymentId(paymentId)
+                .orderId(orderId)
+                .amount(10000L)
+                .status(PaymentStatus.COMPLETED)
+                .method(PaymentMethod.CARD)
+                .createdAt(LocalDateTime.now())
+                .build();
 
-        given(paymentService.getPaymentCustomer(any(UUID.class), any())).willReturn(response);
+        given(paymentService.getPaymentCustomer(any(UUID.class), any())).willReturn(result);
 
         // when & then
-        mockMvc.perform(get("/api/v1/payments/{paymentId}", paymentId))
+        mockMvc.perform(get("/api/v1/payments/{paymentId}", paymentId)
+                        .with(user(new AuthUser(1L, "user1", "CUSTOMER"))))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paymentId").value(paymentId.toString()))

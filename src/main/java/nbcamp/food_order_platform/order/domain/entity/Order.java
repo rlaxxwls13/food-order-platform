@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import nbcamp.food_order_platform.global.common.BaseEntity;
 import nbcamp.food_order_platform.payment.domain.entity.Payment;
+import nbcamp.food_order_platform.product.domain.entity.Product;
 import nbcamp.food_order_platform.store.domain.entity.Store;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -73,6 +74,11 @@ public class Order extends BaseEntity {
         this.orderItems.add(item);
         item.assignOrder(this);
         this.totalAmount = recalculateTotalAmount();
+    }
+    //상품 주문 재고 차감 로직
+    public void addOrderItemWithStockAdjustment(Product product, Long quantity) {
+        product.decreaseStock(quantity.intValue()); // 재고 차감 로직 위임
+        this.addOrderItem(OrderItem.create(product, quantity));
     }
 
     // 특정 주문 상품 취소 로직

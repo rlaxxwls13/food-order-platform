@@ -1,13 +1,14 @@
 package nbcamp.food_order_platform.order.presentation.controller;
 
 import nbcamp.food_order_platform.global.security.JwtUtil;
+import nbcamp.food_order_platform.global.security.AuthUser;
+import nbcamp.food_order_platform.order.application.dto.result.OrderSummaryResult;
 import nbcamp.food_order_platform.order.application.service.OrderService;
 import nbcamp.food_order_platform.order.domain.entity.OrderStatus;
-import nbcamp.food_order_platform.order.presentation.dto.response.OrderSummaryResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +24,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -30,9 +33,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
-        controllers = OrderAdminController.class,
-        excludeAutoConfiguration = SecurityAutoConfiguration.class
+        controllers = OrderAdminController.class
 )
+@AutoConfigureMockMvc
 class OrderAdminControllerTest {
 
     @Autowired
@@ -48,12 +51,12 @@ class OrderAdminControllerTest {
     @Test
     @DisplayName("관리자 주문 검색 성공: 전체 주문 내역이 페이지로 반환된다")
     void searchOrders_success() throws Exception {
-        OrderSummaryResponse summary = OrderSummaryResponse.builder()
+        OrderSummaryResult summary = OrderSummaryResult.builder()
                 .orderId(UUID.randomUUID())
                 .storeName("관리자가게")
                 .representativeItemName("대표상품")
                 .totalAmount(15000L)
-                .orderStatus(OrderStatus.CREATED)
+                .status(OrderStatus.CREATED)
                 .statusDescription("생성 완료")
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -62,6 +65,7 @@ class OrderAdminControllerTest {
                 .willReturn(new PageImpl<>(List.of(summary), PageRequest.of(0, 10), 1));
 
         mockMvc.perform(get("/api/v1/admin/orders")
+                        .with(user(new AuthUser(99L, "admin", "MANAGER")))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -75,7 +79,9 @@ class OrderAdminControllerTest {
     void cancelOrder_success() throws Exception {
         UUID orderId = UUID.randomUUID();
 
-        mockMvc.perform(post("/api/v1/admin/orders/{orderId}/cancel", orderId))
+        mockMvc.perform(post("/api/v1/admin/orders/{orderId}/cancel", orderId)
+                        .with(user(new AuthUser(99L, "admin", "MANAGER")))
+                        .with(csrf()))
                 .andDo(print())
                 .andExpect(status().isOk());
 

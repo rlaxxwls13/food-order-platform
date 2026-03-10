@@ -1,14 +1,15 @@
 package nbcamp.food_order_platform.order.application;
 
 import jakarta.persistence.EntityManager;
+import nbcamp.food_order_platform.global.security.AuthUser;
+import nbcamp.food_order_platform.order.application.dto.command.OrderCreateCommand;
+import nbcamp.food_order_platform.order.application.dto.query.OrderSearchQuery;
+import nbcamp.food_order_platform.order.application.dto.result.OrderResult;
+import nbcamp.food_order_platform.order.application.dto.result.OrderSummaryResult;
 import nbcamp.food_order_platform.order.application.service.OrderService;
 import nbcamp.food_order_platform.order.domain.entity.Order;
 import nbcamp.food_order_platform.order.domain.entity.OrderStatus;
 import nbcamp.food_order_platform.order.domain.repository.OrderRepository;
-import nbcamp.food_order_platform.order.presentation.dto.request.OrderCreateRequest;
-import nbcamp.food_order_platform.order.presentation.dto.request.OrderSearchCondition;
-import nbcamp.food_order_platform.order.presentation.dto.response.OrderResponse;
-import nbcamp.food_order_platform.order.presentation.dto.response.OrderSummaryResponse;
 import nbcamp.food_order_platform.product.domain.entity.Product;
 import nbcamp.food_order_platform.product.domain.repository.ProductRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -62,10 +63,11 @@ class OrderServiceIntegrationTest {
         seedProduct(productId, storeId, "후라이드", 10, 3000);
         seedAddress(addressId, userId);
 
-        OrderCreateRequest.OrderItemRequest item = new OrderCreateRequest.OrderItemRequest(productId, 2L);
-        OrderCreateRequest request = new OrderCreateRequest(storeId, "요청사항", List.of(item), addressId);
+        OrderCreateCommand.OrderItemCommand item = new OrderCreateCommand.OrderItemCommand(productId, 2L);
+        OrderCreateCommand command = new OrderCreateCommand(storeId, "요청사항", List.of(item), addressId, userId);
 
-        OrderResponse response = orderService.createOrder(request, userId);
+        AuthUser authUser = new AuthUser(userId, "user" + userId, "CUSTOMER");
+        OrderResult response = orderService.createOrder(command, authUser);
         flushAndClear();
 
         Order saved = orderRepository.findById(response.orderId()).orElseThrow();
@@ -92,28 +94,31 @@ class OrderServiceIntegrationTest {
         seedProduct(productId, storeId, "양념치킨", 10, 2500);
         seedAddress(addressId, userId);
 
-        UUID createdOrderId = createOrder(userId, storeId, productId, addressId, 1L);
-        UUID paidOrderId = createOrder(userId, storeId, productId, addressId, 1L);
+        AuthUser authUser = new AuthUser(userId, "user" + userId, "CUSTOMER");
+
+        UUID createdOrderId = createOrder(authUser, storeId, productId, addressId, 1L);
+        UUID paidOrderId = createOrder(authUser, storeId, productId, addressId, 1L);
 
         Order paidOrder = orderRepository.findById(paidOrderId).orElseThrow();
         paidOrder.updateStatus(OrderStatus.PAID);
         flushAndClear();
 
-        Page<OrderSummaryResponse> result = orderService.searchOrdersCustomer(
-                userId,
-                new OrderSearchCondition(OrderStatus.CREATED, null, null),
+        Page<OrderSummaryResult> result = orderService.searchOrdersCustomer(
+                authUser,
+                new OrderSearchQuery(userId, null, OrderStatus.CREATED, null, null),
                 PageRequest.of(0, 10)
         );
 
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getContent().get(0).orderId()).isEqualTo(createdOrderId);
-        assertThat(result.getContent().get(0).orderStatus()).isEqualTo(OrderStatus.CREATED);
+        assertThat(result.getContent().get(0).status()).isEqualTo(OrderStatus.CREATED);
     }
 
-    private UUID createOrder(Long userId, UUID storeId, UUID productId, UUID addressId, long quantity) {
-        OrderCreateRequest.OrderItemRequest item = new OrderCreateRequest.OrderItemRequest(productId, quantity);
-        OrderCreateRequest request = new OrderCreateRequest(storeId, "요청", List.of(item), addressId);
-        OrderResponse response = orderService.createOrder(request, userId);
+    private UUID createOrder(AuthUser authUser, UUID storeId, UUID productId, UUID addressId, long quantity) {
+        Long userId = authUser.getUserId();
+        OrderCreateCommand.OrderItemCommand item = new OrderCreateCommand.OrderItemCommand(productId, quantity);
+        OrderCreateCommand command = new OrderCreateCommand(storeId, "요청", List.of(item), addressId, userId);
+        OrderResult response = orderService.createOrder(command, authUser);
         flushAndClear();
         return response.orderId();
     }

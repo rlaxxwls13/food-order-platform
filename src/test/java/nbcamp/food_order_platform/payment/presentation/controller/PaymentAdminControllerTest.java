@@ -1,15 +1,16 @@
 package nbcamp.food_order_platform.payment.presentation.controller;
 
 import nbcamp.food_order_platform.global.security.JwtUtil;
+import nbcamp.food_order_platform.global.security.AuthUser;
+import nbcamp.food_order_platform.payment.application.dto.result.PaymentResult;
+import nbcamp.food_order_platform.payment.application.dto.result.PaymentSummaryResult;
 import nbcamp.food_order_platform.payment.application.service.PaymentService;
 import nbcamp.food_order_platform.payment.domain.entity.PaymentMethod;
 import nbcamp.food_order_platform.payment.domain.entity.PaymentStatus;
-import nbcamp.food_order_platform.payment.presentation.dto.response.PaymentResponse;
-import nbcamp.food_order_platform.payment.presentation.dto.response.PaymentSummaryResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -24,15 +25,16 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(
-        controllers = PaymentAdminController.class,
-        excludeAutoConfiguration = SecurityAutoConfiguration.class
+        controllers = PaymentAdminController.class
 )
+@AutoConfigureMockMvc
 class PaymentAdminControllerTest {
 
     @Autowired
@@ -48,18 +50,19 @@ class PaymentAdminControllerTest {
     @Test
     @DisplayName("관리자 결제 검색 성공: 전체 결제 내역이 페이지로 반환된다")
     void searchPayments_success() throws Exception {
-        PaymentSummaryResponse summary = new PaymentSummaryResponse(
-                UUID.randomUUID(),
-                20000L,
-                LocalDateTime.now(),
-                PaymentStatus.COMPLETED,
-                PaymentMethod.CARD
-        );
+        PaymentSummaryResult summary = PaymentSummaryResult.builder()
+                .paymentId(UUID.randomUUID())
+                .amount(20000L)
+                .createdAt(LocalDateTime.now())
+                .status(PaymentStatus.COMPLETED)
+                .method(PaymentMethod.CARD)
+                .build();
 
         given(paymentService.searchPaymentsAdmin(any(), any(), any()))
                 .willReturn(new PageImpl<>(List.of(summary), PageRequest.of(0, 10), 1));
 
         mockMvc.perform(get("/api/v1/admin/payments")
+                        .with(user(new AuthUser(99L, "admin", "MANAGER")))
                         .accept(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -74,17 +77,19 @@ class PaymentAdminControllerTest {
         UUID paymentId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
 
-        PaymentResponse response = new PaymentResponse(
-                paymentId,
-                orderId,
-                20000L,
-                PaymentStatus.READY,
-                LocalDateTime.now()
-        );
+        PaymentResult result = PaymentResult.builder()
+                .paymentId(paymentId)
+                .orderId(orderId)
+                .amount(20000L)
+                .status(PaymentStatus.READY)
+                .method(PaymentMethod.CARD)
+                .createdAt(LocalDateTime.now())
+                .build();
 
-        given(paymentService.getPaymentAdmin(eq(paymentId), any())).willReturn(response);
+        given(paymentService.getPaymentAdmin(eq(paymentId), any())).willReturn(result);
 
-        mockMvc.perform(get("/api/v1/admin/payments/{paymentId}", paymentId))
+        mockMvc.perform(get("/api/v1/admin/payments/{paymentId}", paymentId)
+                        .with(user(new AuthUser(99L, "admin", "MANAGER"))))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.paymentId").value(paymentId.toString()))

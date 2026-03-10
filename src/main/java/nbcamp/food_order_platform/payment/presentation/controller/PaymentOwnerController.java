@@ -2,6 +2,7 @@ package nbcamp.food_order_platform.payment.presentation.controller;
 
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.global.security.AuthUser;
+import nbcamp.food_order_platform.payment.application.dto.query.PaymentSearchQuery;
 import nbcamp.food_order_platform.payment.application.service.PaymentService;
 import nbcamp.food_order_platform.payment.presentation.dto.request.PaymentSearchCondition;
 import nbcamp.food_order_platform.payment.presentation.dto.response.PaymentResponse;
@@ -28,7 +29,9 @@ public class PaymentOwnerController {
             @RequestParam UUID storeId,
             PaymentSearchCondition condition,
             Pageable pageable) {
-        return ResponseEntity.ok(paymentService.searchPaymentsOwner(storeId, condition, pageable, authUser));
+        PaymentSearchQuery query = new PaymentSearchQuery(condition.status(), condition.startDate(), condition.endDate());
+        return ResponseEntity.ok(paymentService.searchPaymentsOwner(storeId, query, pageable, authUser)
+                .map(PaymentSummaryResponse::from));
     }
 
     // 결제 상세 조회 (사장)
@@ -37,6 +40,6 @@ public class PaymentOwnerController {
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable UUID paymentId,
             @RequestParam UUID storeId) {
-        return ResponseEntity.ok(paymentService.getPaymentOwner(paymentId, storeId, authUser));
+        return ResponseEntity.ok(PaymentResponse.from(paymentService.getPaymentOwner(paymentId, storeId, authUser)));
     }
 }

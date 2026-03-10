@@ -3,6 +3,8 @@ package nbcamp.food_order_platform.order.presentation.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.global.security.AuthUser;
+import nbcamp.food_order_platform.order.application.dto.command.OrderRejectCommand;
+import nbcamp.food_order_platform.order.application.dto.query.OrderSearchQuery;
 import nbcamp.food_order_platform.order.application.service.OrderService;
 import nbcamp.food_order_platform.order.presentation.dto.request.OrderRejectRequest;
 import nbcamp.food_order_platform.order.presentation.dto.request.OrderSearchCondition;
@@ -30,7 +32,16 @@ public class OrderOwnerController {
             @RequestParam UUID storeId,
             OrderSearchCondition condition,
             Pageable pageable) {
-        return ResponseEntity.ok(orderService.searchOrdersOwner(storeId, condition, pageable, authUser));
+        OrderSearchQuery query = new OrderSearchQuery(
+                null,
+                storeId,
+                condition.status(),
+                condition.startDate(),
+                condition.endDate()
+        );
+
+        return ResponseEntity.ok(orderService.searchOrdersOwner(query, pageable, authUser)
+                .map(OrderSummaryResponse::from));
     }
 
     // 가게 주문 상세 조회 (사장)
@@ -38,7 +49,7 @@ public class OrderOwnerController {
     public ResponseEntity<OrderResponse> getOrder(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable UUID orderId) {
-        return ResponseEntity.ok(orderService.getOrderOwner(orderId, authUser));
+        return ResponseEntity.ok(OrderResponse.from(orderService.getOrderOwner(orderId, authUser)));
     }
 
     // 주문 승인 (사장)
@@ -56,7 +67,7 @@ public class OrderOwnerController {
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable UUID orderId,
             @Valid @RequestBody OrderRejectRequest request) {
-        orderService.rejectOrderByOwner(orderId, request, authUser);
+        orderService.rejectOrderByOwner(orderId, new OrderRejectCommand(request.reason()), authUser);
         return ResponseEntity.ok().build();
     }
 }

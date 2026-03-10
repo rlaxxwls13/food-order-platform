@@ -2,10 +2,12 @@ package nbcamp.food_order_platform.order.application.service;
 
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
+import nbcamp.food_order_platform.global.security.AuthUser;
+import nbcamp.food_order_platform.order.application.dto.command.OrderCreateCommand;
+import nbcamp.food_order_platform.order.application.dto.result.OrderResult;
 import nbcamp.food_order_platform.order.domain.entity.Order;
+import nbcamp.food_order_platform.order.domain.entity.OrderStatus;
 import nbcamp.food_order_platform.order.domain.repository.OrderRepository;
-import nbcamp.food_order_platform.order.presentation.dto.request.OrderCreateRequest;
-import nbcamp.food_order_platform.order.presentation.dto.response.OrderResponse;
 import nbcamp.food_order_platform.product.domain.entity.Product;
 import nbcamp.food_order_platform.product.domain.repository.ProductRepository;
 import nbcamp.food_order_platform.store.domain.entity.Store;
@@ -21,6 +23,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -60,13 +63,13 @@ class OrderServiceTest {
         Store store = mock(Store.class);
         Address address = mock(Address.class);
         Product product = mock(Product.class);
-        OrderCreateRequest.OrderItemRequest itemReq = new OrderCreateRequest.OrderItemRequest(productId, 2L);
-        OrderCreateRequest request = new OrderCreateRequest(storeId, "배달 요청사항", List.of(itemReq), addressId);
+        OrderCreateCommand.OrderItemCommand itemReq = new OrderCreateCommand.OrderItemCommand(productId, 2L);
+        OrderCreateCommand command = new OrderCreateCommand(storeId, "배달 요청사항", List.of(itemReq), addressId, userId);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
         when(addressRepository.findById(addressId)).thenReturn(Optional.of(address));
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        when(productRepository.findAllById(any())).thenReturn(List.of(product));
         
         when(address.getPlaceName()).thenReturn("집");
         when(address.getRoadName()).thenReturn("도로명주소");
@@ -74,15 +77,28 @@ class OrderServiceTest {
         
         when(store.getId()).thenReturn(storeId);
         when(store.getName()).thenReturn("치킨집");
+        when(product.getId()).thenReturn(productId);
+        when(product.getStoreId()).thenReturn(storeId);
 
         Order order = mock(Order.class);
         when(orderRepository.save(any(Order.class))).thenReturn(order);
         when(order.getOrderId()).thenReturn(UUID.randomUUID());
         when(order.getStore()).thenReturn(store);
+        when(order.getUser()).thenReturn(user);
+        when(user.getUserId()).thenReturn(userId);
+        when(user.getUsername()).thenReturn("user" + userId);
+        when(order.getOrderStatus()).thenReturn(OrderStatus.CREATED);
+        when(order.getTotalAmount()).thenReturn(0L);
         when(order.getOrderItems()).thenReturn(List.of()); // Simplified for response mapping
+        when(order.getSnapshotAddress()).thenReturn(null);
+        when(order.getCreatedAt()).thenReturn(LocalDateTime.now());
+
+        AuthUser authUser = mock(AuthUser.class);
+        when(authUser.getUserId()).thenReturn(userId);
+        when(authUser.getRole()).thenReturn("CUSTOMER");
 
         // when
-        OrderResponse response = orderService.createOrder(request, userId);
+        OrderResult response = orderService.createOrder(command, authUser);
 
         // then
         verify(product).decreaseStock(2);
@@ -109,11 +125,19 @@ class OrderServiceTest {
         when(order.getUser()).thenReturn(user);
         when(order.getStore()).thenReturn(store);
         when(order.getOrderItems()).thenReturn(List.of());
+        when(order.getOrderStatus()).thenReturn(OrderStatus.CREATED);
+        when(order.getTotalAmount()).thenReturn(0L);
+        when(order.getSnapshotAddress()).thenReturn(null);
+        when(order.getCreatedAt()).thenReturn(LocalDateTime.now());
 
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 
+        AuthUser authUser = mock(AuthUser.class);
+        when(authUser.getUserId()).thenReturn(userId);
+        when(authUser.getRole()).thenReturn("CUSTOMER");
+
         // when
-        OrderResponse response = orderService.getOrderCustomer(orderId, userId);
+        OrderResult response = orderService.getOrderCustomer(orderId, authUser);
 
         // then
         assertThat(response.orderId()).isEqualTo(orderId);
@@ -136,7 +160,11 @@ class OrderServiceTest {
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 
         // when & then
-        assertThatThrownBy(() -> orderService.getOrderCustomer(orderId, userId))
+        AuthUser authUser = mock(AuthUser.class);
+        when(authUser.getUserId()).thenReturn(userId);
+        when(authUser.getRole()).thenReturn("CUSTOMER");
+
+        assertThatThrownBy(() -> orderService.getOrderCustomer(orderId, authUser))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining(ErrorCode.NO_PERMISSION.getMessage());
     }
@@ -156,8 +184,12 @@ class OrderServiceTest {
 
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
 
+        AuthUser authUser = mock(AuthUser.class);
+        when(authUser.getUserId()).thenReturn(userId);
+        when(authUser.getRole()).thenReturn("CUSTOMER");
+
         // when
-        orderService.cancelOrderByUser(orderId, userId);
+        orderService.cancelOrderByUser(orderId, authUser);
 
         // then
         verify(order).cancelByUser();
