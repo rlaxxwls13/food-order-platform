@@ -69,11 +69,13 @@ public class AuthService {
 
     private void validatePassword(String rawPassword, String encodePassword){
         if(rawPassword.length() < 8 || rawPassword.length() > 20){
-            throw new BusinessException(ErrorCode.INVALID_PASSWORD_LENGTH);
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD);
+            //ErrorCode INVALID_PASSWORD_LENGTH추가
         }
 
         if(!rawPassword.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*]).+$")){
-            throw new BusinessException(ErrorCode.INVALID_PASSWORD_PATTERN);
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD);
+            //ErrorCode INVALID_PASSWORD_PATTERN추가
         }
 
         if(!passwordEncoder.matches(rawPassword, encodePassword)) {
