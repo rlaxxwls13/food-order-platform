@@ -1,5 +1,5 @@
 # food-order-platform
-![image](docs/images/aipoweredimage.png)
+![image](docs/images/aipowered.png)
 [내일배움캠프 Spring 단기심화] 입문 프로젝트-음식 주문 관리 플랫폼
 ### AI 를 활용한 배달 플랫폼 개발 ###  
 비대면 소비 문화의 확산과 모바일 기반 주문 서비스의 성장으로 배달 서비스 시장이 빠르게 확대되고 있다. 특히 음식 주문부터 결제, 배송 상태 확인까지 전 과정을 모바일에서 처리하는 서비스가 보편화되면서, 사용자들은 더욱 편리하고 직관적인 주문 경험을 요구하고 있다.
