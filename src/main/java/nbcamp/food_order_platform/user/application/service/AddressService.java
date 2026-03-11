@@ -49,6 +49,18 @@ public class AddressService {
         addressRepository.save(address);
     }
 
+    public List<ListAddResult> listAddress(Long userId) {
 
+        List<Address> addresses =
+                addressRepository.findAllByUser_UserIdAndDeletedAtIsNull(userId);
 
+        return addresses.stream()
+                .map(address -> new ListAddResult(
+                        address.getAddressId(),
+                        address.getPlaceName(),
+                        address.getRoadName(),
+                        address.getDetailName()
+                ))
+                .toList();
+    }
 }

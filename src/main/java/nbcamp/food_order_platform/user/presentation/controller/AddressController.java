@@ -29,5 +29,21 @@ public class AddressController {
         addressService.insertAddress(authUser.getUserId(), command);
     }
 
+    @GetMapping
+    public List<ListAddResDto> listAddress(
+            @AuthenticationPrincipal AuthUser authUser
+    ){
 
+        List<ListAddResult> results =
+                addressService.listAddress(authUser.getUserId());
+
+        return results.stream()
+                .map(result -> new ListAddResDto(
+                        result.addressId(),
+                        result.placeName(),
+                        result.roadName(),
+                        result.detailName()
+                ))
+                .toList();
+    }
 }
