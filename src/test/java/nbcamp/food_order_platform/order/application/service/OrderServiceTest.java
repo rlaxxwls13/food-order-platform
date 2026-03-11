@@ -31,6 +31,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -193,5 +194,35 @@ class OrderServiceTest {
 
         // then
         verify(order).cancelByUser();
+    }
+
+    @Test
+    @DisplayName("사장 주문 완료 성공: 사장이 본인 가게 주문을 완료 처리하면 주문 상태가 변경된다")
+    void completeOrderByOwner_success() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+        Long ownerId = 10L;
+
+        Store store = mock(Store.class);
+        when(store.getId()).thenReturn(storeId);
+        when(store.getOwnerId()).thenReturn(ownerId);
+
+        Order order = mock(Order.class);
+        when(order.getStore()).thenReturn(store);
+
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(storeRepository.findById(storeId)).thenReturn(Optional.of(store));
+
+        AuthUser authUser = mock(AuthUser.class);
+        when(authUser.getUserId()).thenReturn(ownerId);
+        when(authUser.getRole()).thenReturn("OWNER");
+
+        // when
+        orderService.completeOrderByOwner(orderId, authUser);
+
+        // then
+        verify(orderRepository).findById(eq(orderId));
+        verify(order).completeByOwner();
     }
 }

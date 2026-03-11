@@ -150,6 +150,14 @@ public class Order extends BaseEntity {
         }
     }
 
+    // 가게 사장 주문 완료 처리 (STORE_ACCEPTED -> COMPLETED)
+    public void completeByOwner() {
+        if (this.orderStatus != OrderStatus.STORE_ACCEPTED) {
+            throw new IllegalStateException("가게 승인(STORE_ACCEPTED)된 주문만 완료 처리할 수 있습니다.");
+        }
+        this.orderStatus = OrderStatus.COMPLETED;
+    }
+
     // 시스템 등 내부 상태 업데이트 (단순 변경용)
     public void updateStatus(OrderStatus status) {
         this.orderStatus = status;

@@ -91,4 +91,18 @@ class OrderOwnerControllerTest {
 
         verify(orderService).acceptOrderByOwner(eq(orderId), any());
     }
+
+    @Test
+    @DisplayName("사장 주문 완료 성공: 완료 요청 시 OK를 반환한다")
+    void completeOrder_success() throws Exception {
+        UUID orderId = UUID.randomUUID();
+
+        mockMvc.perform(post("/api/v1/owner/orders/{orderId}/complete", orderId)
+                        .with(user(new AuthUser(10L, "owner", "OWNER")))
+                        .with(csrf()))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        verify(orderService).completeOrderByOwner(eq(orderId), any());
+    }
 }

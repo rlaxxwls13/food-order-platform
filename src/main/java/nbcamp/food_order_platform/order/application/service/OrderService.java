@@ -194,6 +194,18 @@ public class OrderService {
         order.rejectByOwner();
     }
 
+    // 사장 주문 완료 처리 (STORE_ACCEPTED -> COMPLETED)
+    @Transactional
+    public void completeOrderByOwner(UUID orderId, AuthUser authUser) {
+        Role role = requireAuthUser(authUser);
+        if (role != Role.OWNER) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION, "사장만 주문 완료 처리할 수 있습니다.");
+        }
+        Order order = findOrderById(orderId);
+        validateStorePermission(order.getStore().getId(), authUser.getUserId(), role);
+        order.completeByOwner();
+    }
+
     // 관리자 주문 강제 취소
     @Transactional
     public void cancelOrderByAdmin(UUID orderId, AuthUser authUser) {
