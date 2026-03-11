@@ -7,7 +7,6 @@ import nbcamp.food_order_platform.user.application.dto.*;
 import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
-import nbcamp.food_order_platform.user.presentation.dto.SignupRequestDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,25 +20,33 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AddressService addressService;
 
     @Transactional
-    public void signup(SignupRequestDto requestDto){
+    public void signup(SignUpUserCommand command){
 
-        validateUsername(requestDto.getUsername());
-        validateEmail(requestDto.getEmail());
-        validatePassword(requestDto.getPassword());
+        validateUsername(command.userReqDto().getUsername());
+        validateEmail(command.userReqDto().getEmail());
+        validatePassword(command.userReqDto().getPassword());
 
-        String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
+        String encodedPassword = passwordEncoder.encode(command.userReqDto().getPassword());
 
         User user = User.builder()
-                .username(requestDto.getUsername())
-                .email(requestDto.getEmail())
+                .username(command.userReqDto().getUsername())
+                .email(command.userReqDto().getEmail())
                 .password(encodedPassword)
-                .nickname(requestDto.getNickname())
+                .nickname(command.userReqDto().getNickname())
                 .role(Role.CUSTOMER)
                 .build();
 
         userRepository.save(user);
+
+        CreateAddCommand addCommand = new CreateAddCommand(
+                command.addReqDto().placeName(),
+                command.addReqDto().roadName(),
+                command.addReqDto().detailName());
+
+        addressService.createAddress(user, addCommand);
     }
 
     private void validateUsername(String username){

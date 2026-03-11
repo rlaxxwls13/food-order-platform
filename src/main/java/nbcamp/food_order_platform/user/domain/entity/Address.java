@@ -27,4 +27,16 @@ public class Address {
 
     @Column(name = "detail_name")
     private String detailName;
+
+    //생성 메서드 추가
+    public static Address create(User user, String placeName, String roadName, String detailName){
+
+        Address address = new Address();
+        address.user = user;
+        address.placeName = placeName;
+        address.roadName = roadName;
+        address.detailName = detailName;
+
+        return address;
+    }
 }

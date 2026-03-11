@@ -25,9 +25,9 @@ public class UserController {
     }
 
     @PostMapping
-    public String signup(@Valid @RequestBody SignupRequestDto requestDto){
-        userService.signup(requestDto);
-        return "회원가입 성공";
+    public void signup(@Valid @RequestBody SignupRequestDto requestDto){
+        SignUpUserCommand command = new SignUpUserCommand(requestDto,requestDto.getAddReqDto());
+        userService.signup(command);
     }
 
     @GetMapping("/me")
