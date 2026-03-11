@@ -1,10 +1,10 @@
 package nbcamp.food_order_platform.ai.presentation.controller;
 
 import lombok.RequiredArgsConstructor;
-import nbcamp.food_order_platform.ai.application.dto.result.DeleteAiDescriptionLogResult;
-import nbcamp.food_order_platform.ai.application.dto.result.UpdateAiDescriptionResult;
 import nbcamp.food_order_platform.ai.application.dto.command.UpdateAiDescriptionCommand;
+import nbcamp.food_order_platform.ai.application.dto.result.DeleteAiDescriptionLogResult;
 import nbcamp.food_order_platform.ai.application.dto.result.GetAiDescriptionLogsResult;
+import nbcamp.food_order_platform.ai.application.dto.result.UpdateAiDescriptionResult;
 import nbcamp.food_order_platform.ai.application.service.AiLogService;
 import nbcamp.food_order_platform.ai.presentation.dto.request.PatchAiDescriptionLogReqDto;
 import nbcamp.food_order_platform.ai.presentation.dto.response.DeleteAiDescriptionLogResDto;
@@ -26,7 +26,7 @@ import java.util.UUID;
 public class AiDescriptionLogController {
 
     private final AiLogService aiLogService;
-  
+
     //상품별 조회
     @GetMapping("/logs")
     public GetAiDescriptionLogsResDto getAiDescriptionLogs(
@@ -41,7 +41,7 @@ public class AiDescriptionLogController {
 
         return GetAiDescriptionLogsResDto.from(result);
     }
-  
+
     //로그 수정
     @PatchMapping("/{aiLogId}")
     public ResponseEntity<PatchAiDescriptionLogResDto> updateProduct(
