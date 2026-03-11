@@ -19,6 +19,8 @@ public class StoreResDto {
     private String name;
     private AddressDto address;
     private List<CategoryDto> categories;
+    private double averageRating;
+    private int totalRatingSum;
     private LocalDateTime createdAt;
     private Long createdBy;
     private LocalDateTime updatedAt;
@@ -60,6 +62,8 @@ public class StoreResDto {
                 store.getName(),
                 addressDto,
                 categoryDtoList,
+                store.getAverageRating(),
+                store.getTotalRatingSum(),
                 store.getCreatedAt(),
                 store.getCreatedBy(),
                 store.getUpdatedAt(),
