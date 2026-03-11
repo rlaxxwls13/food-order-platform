@@ -4,14 +4,18 @@ import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
 import nbcamp.food_order_platform.user.application.dto.*;
+import nbcamp.food_order_platform.user.domain.entity.Address;
 import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.entity.User;
+import nbcamp.food_order_platform.user.domain.repository.AddressRepository;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +25,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AddressService addressService;
+    private final AddressRepository addressRepository;
 
     @Transactional
     public void signup(SignUpUserCommand command){
@@ -134,7 +139,22 @@ public class UserService {
         if(user == null){
             throw new BusinessException(ErrorCode.NOT_EXISTED_USER);
         }
-        return new GetMyInfoResult(user.getNickname(), user.getEmail(), user.getRole().name());
+        List<Address> addresses = addressRepository.findAllByUser_UserId(userId);
+
+        List<AddressInfo> addressInfos = addresses.stream()
+                .map(address -> new AddressInfo(
+                        address.getPlaceName(),
+                        address.getRoadName(),
+                        address.getDetailName()
+                ))
+                .toList();
+
+        return new GetMyInfoResult(
+                user.getNickname(),
+                user.getEmail(),
+                user.getRole().name(),
+                addressInfos
+        );
     }
     @Transactional
     public void updateInfo(UpdateInfoCommand command) {
