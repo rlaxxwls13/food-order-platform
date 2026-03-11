@@ -45,53 +45,126 @@
 </h3>
 
 <a id="architecture-flow"></a>
-##  아키텍처 흐름 ##
+## 아키텍처 흐름
 
 ### 1. 주문-결제 라이프사이클 (Order & Payment)
+
 ```mermaid
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#1c2230",
+    "primaryTextColor": "#e6edf3",
+    "primaryBorderColor": "#30363d",
+    "lineColor": "#58a6ff",
+    "secondaryColor": "#161b22",
+    "tertiaryColor": "#0d1117",
+    "edgeLabelBackground": "#161b22",
+    "fontFamily": "sans-serif",
+    "fontSize": "14px"
+  }
+}}%%
 flowchart TD
-    %% Order Creation
-    Start([주문 시작]) --> Order[주문 생성 CREATED]
-    Order --> PayReady[결제 대기 READY]
-    
-    %% Timeout
-    PayReady -- "15분 초과" --> PayFailed[결제 실패 FAILED]
-    PayFailed --> OrderCancel[주문 취소 CANCELED]
-    
-    %% Success Flow
-    PayReady -- "결제 성공" --> PayComplete[결제 완료 COMPLETED]
-    PayComplete --> PaidOrder[주문 유효 PAID]
-    
-    %% Owner & Delivery
+    Start([주문 시작]) --> Order[주문 생성\nCREATED]
+    Order --> PayReady[결제 대기\nREADY]
+
+    PayReady -- 15분 초과 --> PayFailed[결제 실패\nFAILED]
+    PayFailed --> OrderCancel[주문 취소\nCANCELED]
+
+    PayReady -- 결제 성공 --> PayComplete[결제 완료\nCOMPLETED]
+    PayComplete --> PaidOrder[주문 유효\nPAID]
+
     PaidOrder --> Owner{사장님 확인}
-    Owner -- "승인" --> Accepted[가게 승인 STORE_ACCEPTED]
-    Owner -- "거절" --> Rejected[가게 취소 STORE_REJECTED]
-    
-    Accepted -- "배달 완료" --> Done[배달 완료 COMPLETED]
-    
-    %% Refund & Cancellation
-    Rejected -- "자동 환불" --> Refunded[환불 완료 REFUNDED]
-    Accepted -- "관리자 취소" --> Refunded
+    Owner -- 승인 --> Accepted[가게 승인\nSTORE_ACCEPTED]
+    Owner -- 거절 --> Rejected[가게 취소\nSTORE_REJECTED]
+
+    Accepted -- 배달 완료 --> Done([배달 완료\nCOMPLETED])
+
+    Rejected -- 자동 환불 --> Refunded[환불 완료\nREFUNDED]
+    Accepted -- 관리자 취소 --> Refunded
     CancelAction[사용자/관리자 취소] -.-> Refunded
+
+    style Start fill:#1f6feb,stroke:#388bfd,color:#e6edf3
+    style Done fill:#1a7f37,stroke:#3fb950,color:#e6edf3
+    style PayFailed fill:#6e1a1a,stroke:#f78166,color:#e6edf3
+    style OrderCancel fill:#6e1a1a,stroke:#f78166,color:#e6edf3
+    style Rejected fill:#6e1a1a,stroke:#f78166,color:#e6edf3
+    style Refunded fill:#3d2b00,stroke:#ffa657,color:#e6edf3
+    style PayComplete fill:#1a4b2e,stroke:#3fb950,color:#e6edf3
+    style PaidOrder fill:#1a4b2e,stroke:#3fb950,color:#e6edf3
+    style Accepted fill:#1a4b2e,stroke:#3fb950,color:#e6edf3
+    style Order fill:#1c2230,stroke:#58a6ff,color:#e6edf3
+    style PayReady fill:#1c2230,stroke:#58a6ff,color:#e6edf3
+    style Owner fill:#2d1f47,stroke:#d2a8ff,color:#e6edf3
+    style CancelAction fill:#2a1f0a,stroke:#ffa657,color:#e6edf3
 ```
 
 ### 2. 서비스 부가 기능 (Review & AI Helper)
 
-#### 📝 리뷰 시스템 (Review System)
+#### 리뷰 시스템 (Review System)
+
 ```mermaid
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#1c2230",
+    "primaryTextColor": "#e6edf3",
+    "primaryBorderColor": "#30363d",
+    "lineColor": "#3fb950",
+    "secondaryColor": "#161b22",
+    "tertiaryColor": "#0d1117",
+    "edgeLabelBackground": "#161b22",
+    "fontFamily": "sans-serif",
+    "fontSize": "14px"
+  }
+}}%%
 flowchart LR
-    Done[배달 완료] --> ReviewCont{리뷰 작성?}
-    ReviewCont -- "3일 이내" --> Write[리뷰 작성]
+    Done([배달 완료]) --> ReviewCont{리뷰 작성?}
+    ReviewCont -- 3일 이내 --> Write[리뷰 작성]
+    ReviewCont -- 기간 초과 --> Expired[작성 불가]
     Write --> Stat[가게 평점 반영]
+    Stat --> Visible[플랫폼 노출]
+
+    style Done fill:#1a7f37,stroke:#3fb950,color:#e6edf3
+    style Write fill:#1c2230,stroke:#3fb950,color:#e6edf3
+    style Stat fill:#1c2230,stroke:#ffa657,color:#e6edf3
+    style Visible fill:#1f2d1f,stroke:#3fb950,color:#e6edf3
+    style Expired fill:#6e1a1a,stroke:#f78166,color:#e6edf3
+    style ReviewCont fill:#2d1f47,stroke:#d2a8ff,color:#e6edf3
 ```
 
-#### 🤖 AI 상품 설명 생성 (AI Helper)
+#### AI 상품 설명 생성 (AI Helper)
+
 ```mermaid
-graph LR
-    Owner[사장님/관리자] --> Draft[설명 초안]
-    Draft --> AiService{AI 서비스}
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#1c2230",
+    "primaryTextColor": "#e6edf3",
+    "primaryBorderColor": "#30363d",
+    "lineColor": "#d2a8ff",
+    "secondaryColor": "#161b22",
+    "tertiaryColor": "#0d1117",
+    "edgeLabelBackground": "#161b22",
+    "fontFamily": "sans-serif",
+    "fontSize": "14px"
+  }
+}}%%
+flowchart LR
+    Owner([사장님 / 관리자]) --> Draft[설명 초안 입력]
+    Draft --> API[AI API 요청]
+    API --> AiService{AI 서비스}
     AiService --> Gemini((Gemini AI))
-    Gemini --> Result[정제된 설명]
+    Gemini --> Result[정제된 설명 반환]
+    Result --> Save[DB 저장 & 로그]
+
+    style Owner fill:#1f6feb,stroke:#388bfd,color:#e6edf3
+    style Draft fill:#1c2230,stroke:#d2a8ff,color:#e6edf3
+    style API fill:#1c2230,stroke:#d2a8ff,color:#e6edf3
+    style AiService fill:#2d1f47,stroke:#d2a8ff,color:#e6edf3
+    style Gemini fill:#3d1f6b,stroke:#d2a8ff,color:#e6edf3
+    style Result fill:#1c2230,stroke:#3fb950,color:#e6edf3
+    style Save fill:#1a4b2e,stroke:#3fb950,color:#e6edf3
 ```
 
 <a id="erd"></a>
@@ -123,9 +196,8 @@ graph LR
   - Docker (PostgreSQL on Docker)
 - **AI**
   - Google AI Studio Gemini
-- **Swaager**
+- **Swagger**
   - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
-    </h3>
 
 <a id="features"></a>
 ## 💡 주요 기능
@@ -138,7 +210,7 @@ graph LR
 - AI 설명 로그 조회/수정/삭제(권한 기반)
 
 <a id="package-structure"></a>
-##  패키지 구조
+## 패키지 구조
 ```text
 공통 레이어 구조 (auth/user/store/product/order/payment/review)
 ├─ application
@@ -170,7 +242,7 @@ src/main/java/nbcamp/food_order_platform
 ```
 
 <a id="api-overview"></a>
-##  API 개요
+## API 개요
 아래는 주요 API prefix 요약입니다.
 - Auth: `/api/v1/auth`
 - Users: `/api/v1/users`
