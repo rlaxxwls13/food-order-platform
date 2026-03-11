@@ -12,10 +12,7 @@ public enum OrderStatus {
         CREATED --> CANCELED : 사용자 / 시스템취소 (미결제)
 
         PAID --> STORE_ACCEPTED : 가게 승인 (조리 시작 / 상품 준비)
-        PAID --> STORE_REJECTED : 가게 거절(재고 없음 / 가게 사정 등)
-
-        %% 환불 완료(Refunded)는 주문 상태가 아니라 결제(Payment) 상태에서 관리
-        %% PaymentStatus.REFUNDED 참고
+        PAID --> STORE_REJECTED : 가게 거절(재고 없음 / 가게 사정 등
 
         STORE_ACCEPTED --> COMPLETED : 배송/픽업 완료 (현재 코드 미구현)
 
