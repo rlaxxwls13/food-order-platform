@@ -1,10 +1,12 @@
 # food-order-platform
-![image](docs/images/aipowered.png)
-[내일배움캠프 Spring 단기심화] 입문 프로젝트-음식 주문 관리 플랫폼
 ### AI 를 활용한 배달 플랫폼 개발 ###  
+[내일배움캠프 Spring 단기심화] 입문 프로젝트-음식 주문 관리 플랫폼
+![images](docs/images/aipowered.png)
+## "주문의 패러다임을 바꾸다: AI와 함께하는 스마트 푸드 딜리버리 플랫폼"
 비대면 소비 문화의 확산과 모바일 기반 주문 서비스의 성장으로 배달 서비스 시장이 빠르게 확대되고 있다. 특히 음식 주문부터 결제, 배송 상태 확인까지 전 과정을 모바일에서 처리하는 서비스가 보편화되면서, 사용자들은 더욱 편리하고 직관적인 주문 경험을 요구하고 있다.
 
 이에 따라 본 프로젝트는 배달 서비스의 기본 흐름을 이해하고 구현하는 것을 목표로, 사용자 친화적인 배달 주문 프로그램을 설계·개발하고자 한다.
+
 
 <a id="toc"></a>
 ## 목차 ##
@@ -22,29 +24,75 @@
 ## 팀원 소개 ##
  <h3>
 
-<a href="https://github.com/booungyi"><img src="https://github.com/booungyi.png" width="30" /></a>  **문인혁** (리더)  
+<a href="https://github.com/booungyi"><img src="https://github.com/booungyi.png" width="30" /></a>  **문인혁** (리더)
 - 주문/ 결제
 
- <a href="https://github.com/kimjuneon"><img src="https://github.com/kimjuneon.png" width="30" /></a>  **김준언** (부리더)
+<a href="https://github.com/kimjuneon"><img src="https://github.com/kimjuneon.png" width="30" /></a>  **김준언** (부리더)
 - 가게 / 상품
 
- <a href="https://github.com/zlonce"><img src="https://github.com/zlonce.png" width="30" /></a>  **김지원** (팀원)
+<a href="https://github.com/zlonce"><img src="https://github.com/zlonce.png" width="30" /></a>  **김지원** (팀원)
 - AI
 
- <a href="https://github.com/sionkim0126"><img src="https://github.com/sionkim0126.png" width="30" /></a>  **김시온** (팀원)
+<a href="https://github.com/sionkim0126"><img src="https://github.com/sionkim0126.png" width="30" /></a>  **김시온** (팀원)
 - 인증/보안
 
- <a href="https://github.com/LSLight"><img src="https://github.com/LSLight.png" width="30" /></a>  **이수빈** (팀원)
+<a href="https://github.com/LSLight"><img src="https://github.com/LSLight.png" width="30" /></a>  **이수빈** (팀원)
 - 리뷰 / 평점
 
- <a href="https://github.com/rlaxxwls13"><img src="https://github.com/rlaxxwls13.png" width="30" /></a> **김하진** (팀원)
+<a href="https://github.com/rlaxxwls13"><img src="https://github.com/rlaxxwls13.png" width="30" /></a> **김하진** (팀원)
 - CI / CD
 
 </h3>
 
 <a id="architecture-flow"></a>
 ##  아키텍처 흐름 ##
-![Architecture Flow](docs/images/architecture-flow.png)
+
+### 1. 주문-결제 라이프사이클 (Order & Payment)
+```mermaid
+flowchart TD
+    %% Order Creation
+    Start([주문 시작]) --> Order[주문 생성 CREATED]
+    Order --> PayReady[결제 대기 READY]
+    
+    %% Timeout
+    PayReady -- "15분 초과" --> PayFailed[결제 실패 FAILED]
+    PayFailed --> OrderCancel[주문 취소 CANCELED]
+    
+    %% Success Flow
+    PayReady -- "결제 성공" --> PayComplete[결제 완료 COMPLETED]
+    PayComplete --> PaidOrder[주문 유효 PAID]
+    
+    %% Owner & Delivery
+    PaidOrder --> Owner{사장님 확인}
+    Owner -- "승인" --> Accepted[가게 승인 STORE_ACCEPTED]
+    Owner -- "거절" --> Rejected[가게 취소 STORE_REJECTED]
+    
+    Accepted -- "배달 완료" --> Done[배달 완료 COMPLETED]
+    
+    %% Refund & Cancellation
+    Rejected -- "자동 환불" --> Refunded[환불 완료 REFUNDED]
+    Accepted -- "관리자 취소" --> Refunded
+    CancelAction[사용자/관리자 취소] -.-> Refunded
+```
+
+### 2. 서비스 부가 기능 (Review & AI Helper)
+
+#### 📝 리뷰 시스템 (Review System)
+```mermaid
+flowchart LR
+    Done[배달 완료] --> ReviewCont{리뷰 작성?}
+    ReviewCont -- "3일 이내" --> Write[리뷰 작성]
+    Write --> Stat[가게 평점 반영]
+```
+
+#### 🤖 AI 상품 설명 생성 (AI Helper)
+```mermaid
+graph LR
+    Owner[사장님/관리자] --> Draft[설명 초안]
+    Draft --> AiService{AI 서비스}
+    AiService --> Gemini((Gemini AI))
+    Gemini --> Result[정제된 설명]
+```
 
 <a id="erd"></a>
 ## ️ ERD
@@ -58,7 +106,7 @@
 - **Auth/Security**
   - Spring Security
   - JWT (jjwt)
-- **Persistence** 
+- **Persistence**
   - Spring Data JPA
   - Hibernate
 - **Docs**
@@ -71,14 +119,14 @@
   - Spring Boot 3.5.11
   - Java 17
 - **DB**
-    - PostgreSQL (JDBC Driver: `org.postgresql:postgresql`)
-    - Docker (PostgreSQL on Docker)
+  - PostgreSQL (JDBC Driver: `org.postgresql:postgresql`)
+  - Docker (PostgreSQL on Docker)
 - **AI**
   - Google AI Studio Gemini
 - **Swaager**
   - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
-</h3>
-  
+    </h3>
+
 <a id="features"></a>
 ## 💡 주요 기능
 - 회원가입/로그인(JWT) 및 토큰 재발급
