@@ -47,7 +47,7 @@ public class UserService {
             throw new BusinessException(ErrorCode.AUTHORIZATION);
             //ErrorCode INVALID_ID_LENGTH추가
         }
-        if(username.matches("^[a-z0-9]{4,10}$")){
+        if(!username.matches("^[a-z0-9]{4,10}$")){
             throw new BusinessException(ErrorCode.AUTHORIZATION);
             //ErrorCode INVALID_ID_PATTERN추가
         }
@@ -65,12 +65,12 @@ public class UserService {
 
     private void validatePassword(String password){
         if(password.length() < 8 || password.length() > 20){
-            throw new BusinessException(ErrorCode.INVALID_PASSWORD);
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD_LENGTH);
             //ErrorCode INVALID_PASSWORD_LENGTH추가
         }
 
         if(!password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*]).+$")){
-            throw new BusinessException(ErrorCode.INVALID_PASSWORD);
+            throw new BusinessException(ErrorCode.INVALID_PASSWORD_PATTERN);
             //ErrorCode INVALID_PASSWORD_PATTERN추가
         }
     }
