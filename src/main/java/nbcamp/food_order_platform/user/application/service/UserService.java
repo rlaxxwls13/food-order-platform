@@ -4,15 +4,18 @@ import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
 import nbcamp.food_order_platform.user.application.dto.*;
+import nbcamp.food_order_platform.user.domain.entity.Address;
 import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.entity.User;
+import nbcamp.food_order_platform.user.domain.repository.AddressRepository;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
-import nbcamp.food_order_platform.user.presentation.dto.SignupRequestDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,25 +24,35 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AddressService addressService;
+    private final AddressRepository addressRepository;
 
     @Transactional
-    public void signup(SignupRequestDto requestDto){
+    public void signup(SignUpUserCommand command){
 
-        validateUsername(requestDto.getUsername());
-        validateEmail(requestDto.getEmail());
-        validatePassword(requestDto.getPassword());
+        validateUsername(command.userReqDto().getUsername());
+        validateEmail(command.userReqDto().getEmail());
+        validatePassword(command.userReqDto().getPassword());
 
-        String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
+        String encodedPassword = passwordEncoder.encode(command.userReqDto().getPassword());
 
         User user = User.builder()
-                .username(requestDto.getUsername())
-                .email(requestDto.getEmail())
+                .username(command.userReqDto().getUsername())
+                .email(command.userReqDto().getEmail())
                 .password(encodedPassword)
-                .nickname(requestDto.getNickname())
+                .nickname(command.userReqDto().getNickname())
                 .role(Role.CUSTOMER)
                 .build();
 
         userRepository.save(user);
+
+        if(command.addReqDto() != null) {
+            CreateAddCommand addCommand = new CreateAddCommand(
+                    command.addReqDto().placeName(),
+                    command.addReqDto().roadName(),
+                    command.addReqDto().detailName());
+            addressService.createAddress(user, addCommand);
+        }
     }
 
     private void validateUsername(String username){
@@ -118,7 +131,11 @@ public class UserService {
         if(user.isDeleted()){
             throw new BusinessException(ErrorCode.ALREADY_DELETED_USER);
         }
+        List<Address> addresses = addressRepository.findAllByUser_UserId(userId);
 
+        for(Address address : addresses){
+            address.softDelete(userId);
+        }
         user.softDelete(userId);
     }
 
@@ -127,7 +144,22 @@ public class UserService {
         if(user == null){
             throw new BusinessException(ErrorCode.NOT_EXISTED_USER);
         }
-        return new GetMyInfoResult(user.getNickname(), user.getEmail(), user.getRole().name());
+        List<Address> addresses = addressRepository.findAllByUser_UserIdAndDeletedAtIsNull(userId);
+
+        List<AddressInfo> addressInfos = addresses.stream()
+                .map(address -> new AddressInfo(
+                        address.getPlaceName(),
+                        address.getRoadName(),
+                        address.getDetailName()
+                ))
+                .toList();
+
+        return new GetMyInfoResult(
+                user.getNickname(),
+                user.getEmail(),
+                user.getRole().name(),
+                addressInfos
+        );
     }
     @Transactional
     public void updateInfo(UpdateInfoCommand command) {

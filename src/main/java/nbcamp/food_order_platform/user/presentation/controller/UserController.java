@@ -25,9 +25,9 @@ public class UserController {
     }
 
     @PostMapping
-    public String signup(@Valid @RequestBody SignupRequestDto requestDto){
-        userService.signup(requestDto);
-        return "회원가입 성공";
+    public void signup(@Valid @RequestBody SignupRequestDto requestDto){
+        SignUpUserCommand command = new SignUpUserCommand(requestDto,requestDto.getAddReqDto());
+        userService.signup(command);
     }
 
     @GetMapping("/me")
@@ -35,7 +35,7 @@ public class UserController {
 
         GetMyInfoResult result = userService.getInfo(authUser.getUserId());
 
-        return new GetMyInfoResDto(result.nickname(), result.email(), result.role());
+        return new GetMyInfoResDto(result.nickname(), result.email(), result.role(), result.addressInfos());
     }
 
     @PatchMapping("/me")
