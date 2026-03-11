@@ -65,22 +65,22 @@
   }
 }}%%
 flowchart TD
-    Start([주문 시작]) --> Order[주문 생성\nCREATED]
-    Order --> PayReady[결제 대기\nREADY]
+    Start([주문 시작]) --> Order["주문 생성<br/>CREATED"]
+    Order --> PayReady["결제 대기<br/>READY"]
 
-    PayReady -- 15분 초과 --> PayFailed[결제 실패\nFAILED]
-    PayFailed --> OrderCancel[주문 취소\nCANCELED]
+    PayReady -- 15분 초과 --> PayFailed["결제 실패<br/>FAILED"]
+    PayFailed --> OrderCancel["주문 취소<br/>CANCELED"]
 
-    PayReady -- 결제 성공 --> PayComplete[결제 완료\nCOMPLETED]
-    PayComplete --> PaidOrder[주문 유효\nPAID]
+    PayReady -- 결제 성공 --> PayComplete["결제 완료<br/>COMPLETED"]
+    PayComplete --> PaidOrder["주문 유효<br/>PAID"]
 
     PaidOrder --> Owner{사장님 확인}
-    Owner -- 승인 --> Accepted[가게 승인\nSTORE_ACCEPTED]
-    Owner -- 거절 --> Rejected[가게 취소\nSTORE_REJECTED]
+    Owner -- 승인 --> Accepted["가게 승인<br/>STORE_ACCEPTED"]
+    Owner -- 거절 --> Rejected["가게 취소<br/>STORE_REJECTED"]
 
-    Accepted -- 배달 완료 --> Done([배달 완료\nCOMPLETED])
+    Accepted -- 배달 완료 --> Done(["배달 완료<br/>COMPLETED"])
 
-    Rejected -- 자동 환불 --> Refunded[환불 완료\nREFUNDED]
+    Rejected -- 자동 환불 --> Refunded["환불 완료<br/>REFUNDED"]
     Accepted -- 관리자 취소 --> Refunded
     CancelAction[사용자/관리자 취소] -.-> Refunded
 
