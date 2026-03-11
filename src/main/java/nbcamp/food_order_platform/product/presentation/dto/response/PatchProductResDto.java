@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
+@AllArgsConstructor
 public class PatchProductResDto {
     private UUID productId;
     private UUID storeId;

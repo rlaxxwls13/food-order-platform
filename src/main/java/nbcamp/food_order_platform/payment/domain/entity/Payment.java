@@ -76,26 +76,8 @@ public class Payment extends BaseEntity {
 
     // 결제 강제 취소 (전액 환불)
     public void cancel() {
-        // READY: 결제 진행/대기 단계 취소 (실제 환불은 발생하지 않음)
-        if (this.paymentStatus == PaymentStatus.READY) {
-            this.canceledAmount = 0L;
-            this.paymentStatus = PaymentStatus.CANCELLED;
-            return;
-        }
-
-        // COMPLETED: 결제 완료 후 취소 = 환불 완료(단순화)
-        if (this.paymentStatus == PaymentStatus.COMPLETED) {
-            this.canceledAmount = this.totalAmount;
-            this.paymentStatus = PaymentStatus.REFUNDED;
-            return;
-        }
-
-        // Idempotency for repeated cancel calls
-        if (this.paymentStatus == PaymentStatus.CANCELLED || this.paymentStatus == PaymentStatus.REFUNDED) {
-            return;
-        }
-
-        throw new IllegalStateException("취소/환불 처리는 READY 또는 COMPLETED 상태에서만 가능합니다.");
+        this.canceledAmount = this.totalAmount;
+        this.paymentStatus = PaymentStatus.CANCELLED;
     }
 
     // 15분 경과 여부 확인 후 자동 실패 처리 로직

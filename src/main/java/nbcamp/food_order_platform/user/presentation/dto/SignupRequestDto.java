@@ -1,6 +1,5 @@
 package nbcamp.food_order_platform.user.presentation.dto;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -29,6 +28,4 @@ public class SignupRequestDto {
     @Size(min = 2, max = 20)
     private String nickname;
 
-    @Valid
-    private SignupAddReqDto addReqDto;
 }

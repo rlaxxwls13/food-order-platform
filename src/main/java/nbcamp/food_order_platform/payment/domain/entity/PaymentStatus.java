@@ -10,8 +10,7 @@ public enum PaymentStatus {
     READY("결제 화면"),
     FAILED("결제 실패"),// 시간 초과 또는 잔액보족 등 COMPLETED 전단계 취소 발생시
     COMPLETED("결제 성공"), //결제 성공
-    CANCELLED("결제 취소(결제 전/진행 중)"), // 결제 객체 취소(승인/매입 전)
-    REFUNDED("환불 완료"); // 결제 완료 후 환불 처리
+    CANCELLED("결제 완료 후 시간 내 취소"); //결제액 전체 환불
 
     public final String description;
 }

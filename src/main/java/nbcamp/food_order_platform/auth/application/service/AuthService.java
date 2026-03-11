@@ -3,13 +3,20 @@ package nbcamp.food_order_platform.auth.application.service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.auth.application.dto.LoginAuthCommand;
 import nbcamp.food_order_platform.auth.application.dto.LoginAuthResult;
 import nbcamp.food_order_platform.auth.application.dto.ReissueCommand;
 import nbcamp.food_order_platform.auth.application.dto.ReissueResult;
+import nbcamp.food_order_platform.auth.application.dto.ReissueCommand;
+import nbcamp.food_order_platform.auth.application.dto.ReissueResult;
 import nbcamp.food_order_platform.auth.domain.entity.RefreshToken;
 import nbcamp.food_order_platform.auth.domain.repository.RefreshRepository;
+import nbcamp.food_order_platform.global.error.ErrorCode;
+import nbcamp.food_order_platform.global.error.exception.BusinessException;
 import nbcamp.food_order_platform.global.error.ErrorCode;
 import nbcamp.food_order_platform.global.error.exception.BusinessException;
 import nbcamp.food_order_platform.global.security.JwtUtil;
@@ -68,16 +75,6 @@ public class AuthService {
     }
 
     private void validatePassword(String rawPassword, String encodePassword){
-        if(rawPassword.length() < 8 || rawPassword.length() > 20){
-            throw new BusinessException(ErrorCode.INVALID_PASSWORD);
-            //ErrorCode INVALID_PASSWORD_LENGTH추가
-        }
-
-        if(!rawPassword.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*]).+$")){
-            throw new BusinessException(ErrorCode.INVALID_PASSWORD);
-            //ErrorCode INVALID_PASSWORD_PATTERN추가
-        }
-
         if(!passwordEncoder.matches(rawPassword, encodePassword)) {
             throw new BusinessException(ErrorCode.INVALID_PASSWORD);
         }

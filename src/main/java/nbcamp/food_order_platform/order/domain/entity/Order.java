@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import nbcamp.food_order_platform.global.common.BaseEntity;
 import nbcamp.food_order_platform.payment.domain.entity.Payment;
-import nbcamp.food_order_platform.product.domain.entity.Product;
 import nbcamp.food_order_platform.store.domain.entity.Store;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -75,11 +74,6 @@ public class Order extends BaseEntity {
         item.assignOrder(this);
         this.totalAmount = recalculateTotalAmount();
     }
-    //상품 주문 재고 차감 로직
-    public void addOrderItemWithStockAdjustment(Product product, Long quantity) {
-        product.decreaseStock(quantity.intValue()); // 재고 차감 로직 위임
-        this.addOrderItem(OrderItem.create(product, quantity));
-    }
 
     // 특정 주문 상품 취소 로직
     public void cancelOrderItem(UUID orderItemId, Long cancelCount) {
@@ -148,14 +142,6 @@ public class Order extends BaseEntity {
         if (this.payment != null) {
             this.payment.cancel();
         }
-    }
-
-    // 가게 사장 주문 완료 처리 (STORE_ACCEPTED -> COMPLETED)
-    public void completeByOwner() {
-        if (this.orderStatus != OrderStatus.STORE_ACCEPTED) {
-            throw new IllegalStateException("가게 승인(STORE_ACCEPTED)된 주문만 완료 처리할 수 있습니다.");
-        }
-        this.orderStatus = OrderStatus.COMPLETED;
     }
 
     // 시스템 등 내부 상태 업데이트 (단순 변경용)
