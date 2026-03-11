@@ -70,4 +70,13 @@ public class OrderOwnerController {
         orderService.rejectOrderByOwner(orderId, new OrderRejectCommand(request.reason()), authUser);
         return ResponseEntity.ok().build();
     }
+
+    // 주문 완료 처리 (사장)
+    @PostMapping("/{orderId}/complete")
+    public ResponseEntity<Void> completeOrder(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable UUID orderId) {
+        orderService.completeOrderByOwner(orderId, authUser);
+        return ResponseEntity.ok().build();
+    }
 }
