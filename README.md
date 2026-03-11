@@ -6,17 +6,29 @@
 
 이에 따라 본 프로젝트는 배달 서비스의 기본 흐름을 이해하고 구현하는 것을 목표로, 사용자 친화적인 배달 주문 프로그램을 설계·개발하고자 한다.
 
+<a id="toc"></a>
+## 목차 ##
+- [팀원 소개](#team)
+- [아키텍처 흐름](#architecture-flow)
+- [ERD](#erd)
+- [기술 스택](#tech-stack)
+- [주요 기능](#features)
+- [패키지 구조](#package-structure)
+- [API 개요](#api-overview)
+- [로컬 실행](#local-run)
+- [Docker로 빌드/실행](#docker-run)
+
+<a id="team"></a>
 ## 팀원 소개 ##
  <h3>
 
 <a href="https://github.com/booungyi"><img src="https://github.com/booungyi.png" width="30" /></a>  **문인혁** (리더)  
 - 주문/ 결제
 
-<a href="https://github.com/kimjuneon"><img src="https://github.com/kimjuneon.png" width="30" /></a>  **김준언** (부리더)
+ <a href="https://github.com/kimjuneon"><img src="https://github.com/kimjuneon.png" width="30" /></a>  **김준언** (부리더)
 - 가게 / 상품
 
-
-<a href="https://github.com/zlonce"><img src="https://github.com/zlonce.png" width="30" /></a>  **김지원** (팀원)
+ <a href="https://github.com/zlonce"><img src="https://github.com/zlonce.png" width="30" /></a>  **김지원** (팀원)
 - AI
 
  <a href="https://github.com/sionkim0126"><img src="https://github.com/sionkim0126.png" width="30" /></a>  **김시온** (팀원)
@@ -30,12 +42,15 @@
 
 </h3>
 
-## 🧩 아키텍처 흐름
+<a id="architecture-flow"></a>
+##  아키텍처 흐름 ##
 ![Architecture Flow](docs/images/architecture-flow.png)
 
-## 🗺️ ERD
+<a id="erd"></a>
+## ️ ERD
 ![ERD](docs/images/erd.png)
 
+<a id="tech-stack"></a>
 ## 🛠 기술 스택
 - **Build/Tooling**
   - Gradle
@@ -62,6 +77,9 @@
   - Google AI Studio Gemini
 - **Swaager**
   - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+</h3>
+  
+<a id="features"></a>
 ## 💡 주요 기능
 - 회원가입/로그인(JWT) 및 토큰 재발급
 - 가게 CRUD 및 검색/페이징(관리자용 포함)
@@ -71,7 +89,8 @@
 - 리뷰 작성/수정/삭제 및 조회(고객/관리자)
 - AI 설명 로그 조회/수정/삭제(권한 기반)
 
-## 🧱 패키지 구조
+<a id="package-structure"></a>
+##  패키지 구조
 ```text
 공통 레이어 구조 (auth/user/store/product/order/payment/review)
 ├─ application
@@ -102,7 +121,8 @@ src/main/java/nbcamp/food_order_platform
    └─ domain (entity/repository)
 ```
 
-## 🧭 API 개요
+<a id="api-overview"></a>
+##  API 개요
 아래는 주요 API prefix 요약입니다.
 - Auth: `/api/v1/auth`
 - Users: `/api/v1/users`
@@ -113,7 +133,8 @@ src/main/java/nbcamp/food_order_platform
 - Reviews: `/api/v1/reviews`, `/api/v1/admin/reviews`
 - AI: `/api/v1/ai`
 
-## 🚀 로컬 실행
+<a id="local-run"></a>
+## 로컬 실행
 ### 1) PostgreSQL 실행 (Docker)
 `docker-compose.yml`은 `db`(PostgreSQL)와 `app`(배포 이미지) 서비스를 포함합니다.
 로컬 개발에서는 우선 DB만 실행하는 것을 권장합니다.
@@ -154,6 +175,7 @@ $env:SPRING_PROFILES_ACTIVE="local"
 ./gradlew bootRun
 ```
 
+<a id="docker-run"></a>
 ## 🐳 Docker로 빌드/실행(선택)
 `Dockerfile`은 Gradle로 jar를 빌드한 뒤 `java -jar`로 실행합니다.
 
