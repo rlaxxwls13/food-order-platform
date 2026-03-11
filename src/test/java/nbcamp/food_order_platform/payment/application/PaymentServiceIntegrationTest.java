@@ -211,5 +211,37 @@ class PaymentServiceIntegrationTest {
         em.flush();
         em.clear();
     }
+
+    @Test
+    @DisplayName("결제 취소 성공: 결제 완료 후 취소 시 REFUNDED 상태가 되고 전액 환불된다")
+    void cancelPaymentAfterCompletion_success() {
+        Long userId = 5004L;
+        UUID storeId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+
+        seedUser(userId);
+        seedStore(storeId, userId, "환불가게");
+        seedOrder(orderId, userId, storeId, OrderStatus.CREATED, 15000L);
+
+        AuthUser authUser = new AuthUser(userId, "user" + userId, "CUSTOMER");
+        PaymentResult response = paymentService.initiatePayment(
+                new PaymentCreateCommand(orderId, PaymentMethod.CARD, 15000L, userId),
+                authUser
+        );
+        
+        // 결제 완료 처리
+        paymentService.completePayment(response.paymentId(), authUser);
+        
+        // 결제 취소(환불) 처리
+        paymentService.cancelPayment(response.paymentId(), authUser);
+        flushAndClear();
+
+        Payment saved = paymentRepository.findById(response.paymentId()).orElseThrow();
+        Order order = orderRepository.findById(orderId).orElseThrow();
+
+        assertThat(saved.getPaymentStatus()).isEqualTo(PaymentStatus.REFUNDED);
+        assertThat(saved.getCanceledAmount()).isEqualTo(15000L);
+        assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.CANCELED);
+    }
 }
 
