@@ -27,6 +27,7 @@ public class GetProductsPageResDto {
         private UUID productId;
         private UUID storeId;
         private String name;
+        private String description;
         private int price;
         private int stockQuantity;
         private boolean isHidden;
@@ -40,6 +41,7 @@ public class GetProductsPageResDto {
                                 .productId(product.getProductId())
                                 .storeId(product.getStoreId())
                                 .name(product.getName())
+                                .description(product.getDescription())
                                 .price(product.getPrice())
                                 .stockQuantity(product.getStockQuantity())
                                 .isHidden(product.isHidden())

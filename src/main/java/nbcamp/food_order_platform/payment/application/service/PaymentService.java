@@ -6,15 +6,19 @@ import nbcamp.food_order_platform.global.error.exception.BusinessException;
 import nbcamp.food_order_platform.order.domain.entity.Order;
 import nbcamp.food_order_platform.order.domain.entity.OrderStatus;
 import nbcamp.food_order_platform.order.domain.repository.OrderRepository;
-import nbcamp.food_order_platform.payment.presentation.dto.request.PaymentCreateRequest;
-import nbcamp.food_order_platform.payment.presentation.dto.request.PaymentSearchCondition;
-import nbcamp.food_order_platform.payment.presentation.dto.response.PaymentResponse;
-import nbcamp.food_order_platform.payment.presentation.dto.response.PaymentSummaryResponse;
+import nbcamp.food_order_platform.payment.application.dto.command.PaymentCreateCommand;
+import nbcamp.food_order_platform.payment.application.dto.query.PaymentSearchQuery;
+import nbcamp.food_order_platform.payment.application.dto.result.PaymentResult;
+import nbcamp.food_order_platform.payment.application.dto.result.PaymentSummaryResult;
 import nbcamp.food_order_platform.payment.domain.entity.Payment;
 import nbcamp.food_order_platform.payment.domain.entity.PaymentStatus;
 import nbcamp.food_order_platform.payment.domain.repository.PaymentRepository;
+import nbcamp.food_order_platform.store.domain.entity.Store;
+import nbcamp.food_order_platform.store.domain.repository.StoreRepository;
+import nbcamp.food_order_platform.user.domain.entity.Role;
 import nbcamp.food_order_platform.user.domain.entity.User;
 import nbcamp.food_order_platform.user.domain.repository.UserRepository;
+import nbcamp.food_order_platform.global.security.AuthUser;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -30,13 +34,19 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
+    private final StoreRepository storeRepository;
 
     // 결제 초기화 (READY 상태 생성)
     @Transactional
-    public PaymentResponse initiatePayment(PaymentCreateRequest request, Long userId) {
+    public PaymentResult initiatePayment(PaymentCreateCommand command, AuthUser authUser) {
+        Role role = requireAuthUser(authUser);
+        validateCustomerPermission(role);
+        validateSameUser(authUser, command.userId());
+        Long userId = command.userId();
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_USER));
-        Order order = orderRepository.findById(request.orderId())
+        Order order = orderRepository.findById(command.orderId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_ORDER));
 
         if (!order.getUser().getUserId().equals(userId)) {
@@ -47,13 +57,17 @@ public class PaymentService {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED, "결제 가능한 주문 상태가 아닙니다.");
         }
 
-        Payment payment = Payment.create(order, request.amount(), request.method());
-        return toPaymentResponse(paymentRepository.save(payment));
+        Payment payment = Payment.create(order, command.amount(), command.method());
+        return toPaymentResult(paymentRepository.save(payment));
     }
 
     // 결제 성공 (웹훅 등에서 호출 시)
     @Transactional
-    public PaymentResponse completePayment(UUID paymentId, Long userId) {
+    public PaymentResult completePayment(UUID paymentId, AuthUser authUser) {
+        Role role = requireAuthUser(authUser);
+        validateCustomerPermission(role);
+        Long userId = authUser.getUserId();
+
         Payment payment = findPaymentById(paymentId);
         validatePaymentOwner(payment, userId);
         payment.failIfTimeout();
@@ -64,21 +78,29 @@ public class PaymentService {
 
         payment.complete();
         payment.getOrder().updateStatus(OrderStatus.PAID);
-        return toPaymentResponse(payment);
+        return toPaymentResult(payment);
     }
 
     // 결제 단건 조회 (고객용 - 지연시간 타임아웃 검증 포함)
     @Transactional
-    public PaymentResponse getPaymentCustomer(UUID paymentId, Long userId) {
+    public PaymentResult getPaymentCustomer(UUID paymentId, AuthUser authUser) {
+        Role role = requireAuthUser(authUser);
+        validateCustomerPermission(role);
+        Long userId = authUser.getUserId();
+
         Payment payment = findPaymentById(paymentId);
         validatePaymentOwner(payment, userId);
         payment.failIfTimeout(); // 조회 시 지연시간 체크
-        return toPaymentResponse(payment);
+        return toPaymentResult(payment);
     }
 
     // 일반 결제 취소 (고객 통제)
     @Transactional
-    public void cancelPayment(UUID paymentId, Long userId) {
+    public void cancelPayment(UUID paymentId, AuthUser authUser) {
+        Role role = requireAuthUser(authUser);
+        validateCustomerPermission(role);
+        Long userId = authUser.getUserId();
+
         Payment payment = findPaymentById(paymentId);
         validatePaymentOwner(payment, userId);
         payment.failIfTimeout();
@@ -96,16 +118,19 @@ public class PaymentService {
     }
 
     // 내 결제 페이징 검색 (고객)
-    public Page<PaymentSummaryResponse> searchPaymentsCustomer(Long userId, PaymentSearchCondition condition,
-            Pageable pageable) {
+    public Page<PaymentSummaryResult> searchPaymentsCustomer(AuthUser authUser, PaymentSearchQuery query, Pageable pageable) {
+        Role role = requireAuthUser(authUser);
+        validateCustomerPermission(role);
+        Long userId = authUser.getUserId();
+
         return paymentRepository
                 .searchCustomerPayments(
                         userId,
-                        condition.status(),
-                        condition.startDate(),
-                        condition.endDate(),
+                        query.status(),
+                        query.from(),
+                        query.to(),
                         pageable)
-                .map(this::toPaymentSummaryResponse);
+                .map(this::toPaymentSummaryResult);
     }
 
     // 가게 승인 거절 시 결제 강제 취소 (내부 서비스용)
@@ -116,38 +141,46 @@ public class PaymentService {
     }
 
     // 가게 결제 내역 페이징 검색 (사장용)
-    public Page<PaymentSummaryResponse> searchPaymentsOwner(UUID storeId, PaymentSearchCondition condition,
-            Pageable pageable) {
+    public Page<PaymentSummaryResult> searchPaymentsOwner(UUID storeId, PaymentSearchQuery query,
+            Pageable pageable, AuthUser authUser) {
+        Role role = requireAuthUser(authUser);
+        validateStorePermission(storeId, authUser.getUserId(), role);
         return paymentRepository.searchOwnerPayments(
                         storeId,
-                        condition.status(),
-                        condition.startDate(),
-                        condition.endDate(),
+                        query.status(),
+                        query.from(),
+                        query.to(),
                         pageable)
-                .map(this::toPaymentSummaryResponse);
+                .map(this::toPaymentSummaryResult);
     }
 
     // 가게 결제 단건 상세 조회 (사장용)
-    public PaymentResponse getPaymentOwner(UUID paymentId, UUID storeId) {
+    public PaymentResult getPaymentOwner(UUID paymentId, UUID storeId, AuthUser authUser) {
+        Role role = requireAuthUser(authUser);
+        validateStorePermission(storeId, authUser.getUserId(), role);
         Payment payment = findPaymentById(paymentId);
-        // TODO: StoreId 유효성 체크 필요
-        return toPaymentResponse(payment);
+        return toPaymentResult(payment);
     }
 
     // 전체 결제 페이징 검색 (관리자용)
-    public Page<PaymentSummaryResponse> searchPaymentsAdmin(PaymentSearchCondition condition, Pageable pageable) {
+    public Page<PaymentSummaryResult> searchPaymentsAdmin(PaymentSearchQuery query, Pageable pageable,
+            AuthUser authUser) {
+        Role role = requireAuthUser(authUser);
+        validateAdminPermission(role);
         return paymentRepository
                 .searchAdminPayments(
-                        condition.status(),
-                        condition.startDate(),
-                        condition.endDate(),
+                        query.status(),
+                        query.from(),
+                        query.to(),
                         pageable)
-                .map(this::toPaymentSummaryResponse);
+                .map(this::toPaymentSummaryResult);
     }
 
     // 관리자 결제 상세 조회
-    public PaymentResponse getPaymentAdmin(UUID paymentId) {
-        return toPaymentResponse(findPaymentById(paymentId));
+    public PaymentResult getPaymentAdmin(UUID paymentId, AuthUser authUser) {
+        Role role = requireAuthUser(authUser);
+        validateAdminPermission(role);
+        return toPaymentResult(findPaymentById(paymentId));
     }
 
     // 헬퍼 메서드
@@ -162,21 +195,67 @@ public class PaymentService {
         }
     }
 
-    private PaymentResponse toPaymentResponse(Payment payment) {
-        return new PaymentResponse(
-                payment.getPaymentId(),
-                payment.getOrder().getOrderId(),
-                payment.getTotalAmount(),
-                payment.getPaymentStatus(),
-                payment.getCreatedAt());
+    private Role requireAuthUser(AuthUser authUser) {
+        if (authUser == null) {
+            throw new BusinessException(ErrorCode.AUTHORIZATION);
+        }
+        try {
+            return Role.valueOf(authUser.getRole());
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.INVALID_ROLE);
+        }
     }
 
-    private PaymentSummaryResponse toPaymentSummaryResponse(Payment payment) {
-        return new PaymentSummaryResponse(
-                payment.getPaymentId(),
-                payment.getTotalAmount(),
-                payment.getCreatedAt(),
-                payment.getPaymentStatus(),
-                payment.getPaymentMethod());
+    private void validateCustomerPermission(Role role) {
+        if (role != Role.CUSTOMER) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+    }
+
+    private void validateSameUser(AuthUser authUser, Long commandUserId) {
+        if (commandUserId == null || !commandUserId.equals(authUser.getUserId())) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+    }
+
+    private void validateAdminPermission(Role role) {
+        if (role != Role.MANAGER && role != Role.MASTER) {
+            throw new BusinessException(ErrorCode.NO_PERMISSION, "관리자 권한이 없습니다.");
+        }
+    }
+
+    public void validateStorePermission(UUID storeId, Long userId, Role role) { //가게 주인 확인
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_STORE));
+
+        if (role == Role.MANAGER || role == Role.MASTER)
+            return;
+
+        if (role == Role.OWNER && store.getOwnerId().equals(userId))
+            return;
+
+        throw new BusinessException(ErrorCode.NO_PERMISSION, "가게 권한이 없습니다.");
+    }
+
+    private PaymentResult toPaymentResult(Payment payment) {
+        return PaymentResult.builder()
+                .paymentId(payment.getPaymentId())
+                .orderId(payment.getOrder().getOrderId())
+                .amount(payment.getTotalAmount())
+                .status(payment.getPaymentStatus())
+                .method(payment.getPaymentMethod())
+                .createdAt(payment.getCreatedAt())
+                .userInfo(new PaymentResult.UserInfo(payment.getOrder().getUser().getUserId(), payment.getOrder().getUser().getUsername()))
+                .build();
+    }
+
+    private PaymentSummaryResult toPaymentSummaryResult(Payment payment) {
+        return PaymentSummaryResult.builder()
+                .paymentId(payment.getPaymentId())
+                .amount(payment.getTotalAmount())
+                .createdAt(payment.getCreatedAt())
+                .status(payment.getPaymentStatus())
+                .method(payment.getPaymentMethod())
+                .build();
     }
 }

@@ -2,7 +2,10 @@ package nbcamp.food_order_platform.ai.application.service;
 
 import lombok.RequiredArgsConstructor;
 import nbcamp.food_order_platform.ai.application.dto.command.CreateAiDescriptionCommand;
+import nbcamp.food_order_platform.ai.application.dto.command.UpdateAiDescriptionCommand;
+import nbcamp.food_order_platform.ai.application.dto.result.DeleteAiDescriptionLogResult;
 import nbcamp.food_order_platform.ai.application.dto.result.GetAiDescriptionLogsResult;
+import nbcamp.food_order_platform.ai.application.dto.result.UpdateAiDescriptionResult;
 import nbcamp.food_order_platform.ai.domain.entity.AiDescription;
 import nbcamp.food_order_platform.ai.domain.repository.AiDescriptionRepository;
 import nbcamp.food_order_platform.global.error.ErrorCode;
@@ -15,6 +18,11 @@ import nbcamp.food_order_platform.user.domain.entity.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 import java.util.List;
 import java.util.UUID;
@@ -60,7 +68,51 @@ public class AiLogService {
         );
     }
 
-    public void validateStorePermission(UUID storeId, Long userId, Role role){ //가게 주인 확인
+    //생성 설명 수정
+    @Transactional
+    public UpdateAiDescriptionResult updateAiDescription(UpdateAiDescriptionCommand aiDto, Long userId, Role role) {
+        AiDescription aiDescription = aiDescriptionRepository.findById(aiDto.getAiLogId())
+                .orElseThrow(()-> new BusinessException(ErrorCode.NOT_EXISTED_AI_LOG));
+
+        Product product = productRepository.findById(aiDescription.getProductId())
+                .orElseThrow(()-> new BusinessException(ErrorCode.NOT_EXISTED_PRODUCT));
+
+        validateStorePermission(product.getStoreId(), userId, role);
+
+        if (!Objects.equals(aiDescription.getResponseText(), aiDto.getResponseText())) {
+            product.changeDescription(aiDto.getResponseText());
+            aiDescription.changeDescription(aiDto.getResponseText());
+        }
+        return new UpdateAiDescriptionResult(
+                aiDescription.getId(),
+                aiDescription.getRequestText(),
+                aiDescription.getResponseText(),
+                aiDescription.getUpdatedAt()
+        );
+    }
+
+    //로그 삭제
+    @Transactional
+    public DeleteAiDescriptionLogResult deleteAiDescription(UUID aiLogId, Long userId, Role role) {
+        AiDescription aiDescription = aiDescriptionRepository.findById(aiLogId)
+                .orElseThrow(()-> new BusinessException(ErrorCode.NOT_EXISTED_AI_LOG));
+
+        Product product = productRepository.findById(aiDescription.getProductId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_PRODUCT));
+
+        validateStorePermission(product.getStoreId(), userId, role);
+
+        aiDescription.softDelete(userId);
+
+        return new DeleteAiDescriptionLogResult(
+                aiDescription.getId(),
+                aiDescription.getDeletedAt(),
+                aiDescription.getDeletedBy()
+        );
+    }
+
+    //가게 권한 확인
+    public void validateStorePermission(UUID storeId, Long userId, Role role){
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_STORE));
 
