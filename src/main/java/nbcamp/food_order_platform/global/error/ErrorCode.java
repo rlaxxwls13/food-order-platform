@@ -16,6 +16,7 @@ public enum ErrorCode {
     REVIEW_PERIOD_EXPIRED(HttpStatus.BAD_REQUEST, 4004, "Review creation or modification period has expired"), // 리뷰 수정기간이 지남
     ORDER_NOT_COMPLETED(HttpStatus.BAD_REQUEST, 4005, "Reviews can only be written for completed orders."), // 오더의 상태가 completed만 리뷰 작성 가능
     INVALID_PASSWORD_LENGTH(HttpStatus.BAD_REQUEST, 4006, "Password length must be between 8 and 20 characters."),//패스워드는 8~20자 사이여야 합니다.
+
     INVALID_PASSWORD_PATTERN(HttpStatus.BAD_REQUEST, 4007,
             "Password must include uppercase, lowercase, number, and special character"), //패스워드는 알파벳 대소문자(a~z, A~Z), 숫자(0~9), 특수문자를 포함해야 합니다.
     INVALID_USER_ID_LENGTH(HttpStatus.BAD_REQUEST, 4008,"Username length must be between 4 and 10 characters."), //username은 4자 이상, 10자 이하여야 합니다.

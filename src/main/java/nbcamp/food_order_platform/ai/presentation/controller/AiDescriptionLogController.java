@@ -10,6 +10,9 @@ import nbcamp.food_order_platform.ai.presentation.dto.request.PatchAiDescription
 import nbcamp.food_order_platform.ai.presentation.dto.response.DeleteAiDescriptionLogResDto;
 import nbcamp.food_order_platform.ai.presentation.dto.response.GetAiDescriptionLogsResDto;
 import nbcamp.food_order_platform.ai.presentation.dto.response.PatchAiDescriptionLogResDto;
+import nbcamp.food_order_platform.ai.application.dto.result.GetAiDescriptionLogsResult;
+import nbcamp.food_order_platform.ai.application.service.AiLogService;
+import nbcamp.food_order_platform.ai.presentation.dto.GetAiDescriptionLogsResDto;
 import nbcamp.food_order_platform.global.security.AuthUser;
 import nbcamp.food_order_platform.user.domain.entity.Role;
 import org.springframework.data.domain.PageRequest;
@@ -26,7 +29,7 @@ import java.util.UUID;
 public class AiDescriptionLogController {
 
     private final AiLogService aiLogService;
-
+  
     //상품별 조회
     @GetMapping("/logs")
     public GetAiDescriptionLogsResDto getAiDescriptionLogs(
@@ -41,7 +44,7 @@ public class AiDescriptionLogController {
 
         return GetAiDescriptionLogsResDto.from(result);
     }
-
+  
     //로그 수정
     @PatchMapping("/{aiLogId}")
     public ResponseEntity<PatchAiDescriptionLogResDto> updateProduct(

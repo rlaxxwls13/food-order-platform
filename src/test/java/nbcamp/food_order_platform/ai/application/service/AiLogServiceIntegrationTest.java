@@ -45,6 +45,7 @@ class AiLogServiceIntegrationTest {
 
     @Autowired
     private EntityManager em;
+
     @Autowired
     private AiDescriptionRepository aiDescriptionRepository;
 

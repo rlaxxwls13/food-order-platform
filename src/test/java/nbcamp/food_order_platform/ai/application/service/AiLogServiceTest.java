@@ -177,7 +177,7 @@ public class AiLogServiceTest {
 
         verify(aiDescriptionRepository, never()).findByProductId(any(), any());
     }
-
+  
     @DisplayName("AI 설명 수정 성공")
     @Test
     void updateAiDescription_success() {
@@ -306,6 +306,5 @@ public class AiLogServiceTest {
                     assertThat(be.getErrorCode()).isEqualTo(ErrorCode.NO_PERMISSION);
                 });
     }
-
 
 }
