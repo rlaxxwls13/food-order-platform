@@ -3,13 +3,14 @@ package nbcamp.food_order_platform.user.domain.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import nbcamp.food_order_platform.global.common.BaseEntity;
 
 import java.util.UUID;
 
 @Entity(name = "p_address")
 @Getter
 @NoArgsConstructor
-public class Address {
+public class Address extends BaseEntity {
 
     @Id
     @GeneratedValue

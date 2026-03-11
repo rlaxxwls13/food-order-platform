@@ -130,7 +130,11 @@ public class UserService {
         if(user.isDeleted()){
             throw new BusinessException(ErrorCode.ALREADY_DELETED_USER);
         }
+        List<Address> addresses = addressRepository.findAllByUser_UserId(userId);
 
+        for(Address address : addresses){
+            address.softDelete(userId);
+        }
         user.softDelete(userId);
     }
 
@@ -139,7 +143,7 @@ public class UserService {
         if(user == null){
             throw new BusinessException(ErrorCode.NOT_EXISTED_USER);
         }
-        List<Address> addresses = addressRepository.findAllByUser_UserId(userId);
+        List<Address> addresses = addressRepository.findAllByUser_UserIdAndDeletedAtIsNull(userId);
 
         List<AddressInfo> addressInfos = addresses.stream()
                 .map(address -> new AddressInfo(

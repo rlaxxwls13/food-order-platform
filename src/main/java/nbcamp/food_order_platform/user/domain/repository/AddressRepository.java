@@ -8,5 +8,7 @@ import java.util.UUID;
 
 public interface AddressRepository extends JpaRepository<Address, UUID> {
 
+    List<Address> findAllByUser_UserIdAndDeletedAtIsNull(Long userId);
+
     List<Address> findAllByUser_UserId(Long userId);
 }
