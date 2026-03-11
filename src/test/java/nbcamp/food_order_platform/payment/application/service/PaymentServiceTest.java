@@ -145,8 +145,8 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("결제 취소 성공: 결제 취소 시 연관된 주문도 취소된다")
-    void cancelPayment_success() {
+    @DisplayName("결제 취소 성공: 결제 완료 후 취소 시 환불 처리되고 연관된 주문도 취소된다")
+    void cancelPayment_completed_success() {
         // given
         UUID paymentId = UUID.randomUUID();
         Long userId = 1L;
