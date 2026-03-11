@@ -11,6 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/addresses")
@@ -45,5 +46,13 @@ public class AddressController {
                         result.detailName()
                 ))
                 .toList();
+    }
+
+    @DeleteMapping("/{addressId}")
+    public void deleteAddress(
+            @AuthenticationPrincipal AuthUser authUser,
+            @PathVariable UUID addressId
+    ){
+        addressService.deleteAddress(authUser.getUserId(), addressId);
     }
 }

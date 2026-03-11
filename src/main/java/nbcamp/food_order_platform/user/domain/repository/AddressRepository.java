@@ -11,4 +11,6 @@ public interface AddressRepository extends JpaRepository<Address, UUID> {
     List<Address> findAllByUser_UserIdAndDeletedAtIsNull(Long userId);
 
     List<Address> findAllByUser_UserId(Long userId);
+
+    Long countByUser_UserIdAndDeletedAtIsNull(Long userId);
 }

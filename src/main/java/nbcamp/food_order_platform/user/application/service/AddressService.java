@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -62,5 +63,28 @@ public class AddressService {
                         address.getDetailName()
                 ))
                 .toList();
+    }
+
+    @Transactional
+    public void deleteAddress(Long userId, UUID addressId){
+
+        Address address = addressRepository.findById(addressId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_EXISTED_ADDRESS));
+
+        if(address.isDeleted()){
+            throw new BusinessException(ErrorCode.ALREADY_DELETED_ADDRESS);
+        }
+
+        if(!address.getUser().getUserId().equals(userId)){
+            throw new BusinessException(ErrorCode.NO_PERMISSION);
+        }
+
+        Long count = addressRepository.countByUser_UserIdAndDeletedAtIsNull(userId);
+
+        if(count <= 1){
+            throw new BusinessException(ErrorCode.ADDRESS_REQUIRED);
+        }
+
+        address.softDelete(userId);
     }
 }
