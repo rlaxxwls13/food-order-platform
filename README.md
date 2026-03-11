@@ -28,8 +28,6 @@
 - CI / CD
 
 </h3>
-## 🔗 문서
-- Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 
 ## 🧩 아키텍처 흐름
 ![Architecture Flow](docs/images/architecture-flow.png)
@@ -61,7 +59,8 @@
     - Docker (PostgreSQL on Docker)
 - **AI**
   - Google AI Studio Gemini
-
+- **Swaager**
+  - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 ## 💡 주요 기능
 - 회원가입/로그인(JWT) 및 토큰 재발급
 - 가게 CRUD 및 검색/페이징(관리자용 포함)
