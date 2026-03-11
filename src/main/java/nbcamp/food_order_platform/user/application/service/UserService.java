@@ -46,12 +46,13 @@ public class UserService {
 
         userRepository.save(user);
 
-        CreateAddCommand addCommand = new CreateAddCommand(
-                command.addReqDto().placeName(),
-                command.addReqDto().roadName(),
-                command.addReqDto().detailName());
-
-        addressService.createAddress(user, addCommand);
+        if(command.addReqDto() != null) {
+            CreateAddCommand addCommand = new CreateAddCommand(
+                    command.addReqDto().placeName(),
+                    command.addReqDto().roadName(),
+                    command.addReqDto().detailName());
+            addressService.createAddress(user, addCommand);
+        }
     }
 
     private void validateUsername(String username){
