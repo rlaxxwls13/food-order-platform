@@ -16,7 +16,7 @@
 - [패키지 구조](#package-structure)
 - [API 개요](#api-overview)
 - [로컬 실행](#local-run)
-- [Docker로 빌드/실행](#docker-run)
+- [Docker Compose로 실행](#docker-run)
 
 <a id="team"></a>
 ## 팀원 소개 ##
@@ -135,58 +135,64 @@ src/main/java/nbcamp/food_order_platform
 
 <a id="local-run"></a>
 ## 로컬 실행
-### 1) PostgreSQL 실행 (Docker)
-`docker-compose.yml`은 `db`(PostgreSQL)와 `app`(배포 이미지) 서비스를 포함합니다.
-로컬 개발에서는 우선 DB만 실행하는 것을 권장합니다.
+로컬 개발 시에는 DB만 Docker로 띄우고 애플리케이션은 IntelliJ에서 직접 실행하는 것을 권장합니다.
+### 1) .env 파일 준비
+DB 컨테이너 실행에 필요한 값을 프로젝트 루트에 .env 파일로 생성하세요.
+```env
+POSTGRES_DB=food_order
+POSTGRES_USER=your_username
+POSTGRES_PASSWORD=your_password
+```
 
+### 2) DB 실행
 ```bash
 docker compose up -d db
 ```
+db 서비스만 지정하여 PostgreSQL 컨테이너만 실행합니다. 앱 컨테이너는 실행되지 않습니다.
 
-`.env` 파일(프로젝트 루트)에 아래 값을 준비하세요.
-
-```env
-POSTGRES_DB=food_order
-POSTGRES_USER=food_order
-POSTGRES_PASSWORD=food_order
-JWT_SECRET=change-me
-GEMINI_API_KEY=change-me
-```
-
-### 2) 로컬 설정 파일 준비
+### 3) 로컬 설정 파일 준비
 로컬 전용 설정은 git에 커밋하지 않도록 `.gitignore`에 포함되어 있습니다.
 - `src/main/resources/application-local.yml` (직접 생성)
 - 템플릿: `src/main/resources/application-local.yml.example`
 
-`application-local.yml.example`을 복사해 `application-local.yml`로 만들고, DB 계정 정보를 채워주세요.
+`application-local.yml.example`을 복사해 `application-local.yml`로 만들고, DB 접속 정보, JWT 시크릿, GEMINI API 키를 채워주세요.
 
 로컬에서는 스키마 자동 반영이 필요하면 `ddl-auto: update`(템플릿 기본값)를 사용합니다.
 (운영/공용 DB에는 `ddl-auto: none` 권장)
 
-### 3) 애플리케이션 실행
+### 4) 애플리케이션 실행
+IntelliJ에서 `SPRING_PROFILES_ACTIVE=local`로 실행하거나
 ```bash
-./gradlew bootRun
-```
-
-프로파일은 IDE 또는 환경변수로 활성화할 수 있습니다.
-```bash
-# PowerShell 예시
-$env:SPRING_PROFILES_ACTIVE="local"
-./gradlew bootRun
+SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
 ```
 
 <a id="docker-run"></a>
-## 🐳 Docker로 빌드/실행(선택)
-`Dockerfile`은 Gradle로 jar를 빌드한 뒤 `java -jar`로 실행합니다.
+## 🐳 Docker Compose로 실행(선택)
+앱까지 Docker로 실행할 경우 사용합니다.
 
+### 1) .env 파일 준비
+```env
+POSTGRES_DB=food_order
+POSTGRES_USER=your_username
+POSTGRES_PASSWORD=your_password
+JWT_SECRET=your-jwt-secret
+GEMINI_API_KEY=your-gemini-api-key
+ECR_REGISTRY=local
+ECR_REPOSITORY=food-order-platform
+```
+
+### 2) 이미지 빌드
+ECR 이미지 대신 로컬에서 직접 이미지를 빌드합니다
 ```bash
-docker build -t food-order-platform:local .
-docker run --rm -p 8080:8080 `
-  -e SPRING_PROFILES_ACTIVE=prod `
-  -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/$env:POSTGRES_DB `
-  -e SPRING_DATASOURCE_USERNAME=$env:POSTGRES_USER `
-  -e SPRING_DATASOURCE_PASSWORD=$env:POSTGRES_PASSWORD `
-  -e JWT_SECRET=$env:JWT_SECRET `
-  -e GEMINI_API_KEY=$env:GEMINI_API_KEY `
-  food-order-platform:local
+docker build -t local/food-order-platform:latest .
+```
+
+### 3) 실행
+```bash
+docker compose up -d
+```
+
+### 4) 종료
+```bash
+docker compose down
 ```
